@@ -4,6 +4,7 @@
 Trong file **generate_data/combine_train_data.py**:
 Thay **root_frames_dir** và **root_labels_dir** bằng folder có format:
 
+'''bash
 root
 | 
 |___ VID_NAME_1
@@ -12,6 +13,7 @@ root
 |___ VID_NAME_2
         |___ frame_xxxxxx.jpg
         |___ ...
+'''
 
 Trong thư mục **generate_data**:
 
