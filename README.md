@@ -72,7 +72,9 @@ python train.py --data {data_yaml_file_config} --epochs {num_epochs} --batch {ba
 Nếu sử dụng checkpoint **crowdhuman_yolov5** có thể sử dụng config file của yolov5m trong yolov5/models/yolov5m.yaml
 
 Kết quả sau khi training được lưu trong /yolov5/runs/train/exp{x}. 
-Checkpoint model đã finetune và training 30 epoch trên VTX D[ở đây](https://wandb.ai/hainguyen/YOLOv5/artifacts/model/run_3gqwg2vr_model/ebe1245d78646d98df91/files)
+
+**Checkpoint model** đã finetune và training 30 epoch trên VTX DATA [ở đây](https://wandb.ai/hainguyen/YOLOv5/artifacts/model/run_3gqwg2vr_model/ebe1245d78646d98df91/files)
+
 ### Evaluate
 ```bash
 python test.py --data {data_yaml_file_config} --weights {weights_path} --save-txt --save-conf
