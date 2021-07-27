@@ -73,7 +73,7 @@ Nếu sử dụng checkpoint **crowdhuman_yolov5** có thể sử dụng config 
 
 Kết quả sau khi training được lưu trong /yolov5/runs/train/exp{x}. 
 
-**Checkpoint model** đã finetune và training 30 epoch trên VTX DATA [ở đây](https://wandb.ai/hainguyen/YOLOv5/artifacts/model/run_3gqwg2vr_model/ebe1245d78646d98df91/files)
+**Checkpoint model đã finetune và training 30 epoch trên VTX DATA: [Checkpoint](https://wandb.ai/hainguyen/YOLOv5/artifacts/model/run_3gqwg2vr_model/ebe1245d78646d98df91/files)**
 
 ### Evaluate
 ```bash
@@ -82,6 +82,10 @@ python test.py --data {data_yaml_file_config} --weights {weights_path} --save-tx
 Trong đó file **data config yaml** để **train path** và **val path** là absolute path đến thư mục images của test data (model test toàn bộ thư mục images)
 
 File label sau khi evaluate được lưu trong /yolov5/runs/test/exp{x}
+
+Kết quả evaluate **Finetune Model** trên VTX DATA sau khi train 30 epochs và **Model** pretrained trên CrowdHman Dataset: **[Evaluation Results](https://docs.google.com/spreadsheets/d/1BOKNfHO-Ar7BzfpYRyFjux44B-I44XICpk7thhqd3MY/edit?fbclid=IwAR1GgUpXwZGpfFvW5TSdUTRWC09U4OIxLK2ajcDB218c0WngXt9ypyqVNhc#gid=0)**
+
+
 
 ### Inferrence
 ```bash
