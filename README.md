@@ -15,12 +15,42 @@ root
         |___ ...
 ```
 
+```bash
+root
+| 
+|___ VID_NAME_1
+|       |___ frame_xxxxxx.txt
+|       |___ ...
+|___ VID_NAME_2
+        |___ frame_xxxxxx.txt
+        |___ ...
+```
+
 Trong thư mục **generate_data**:
-
-
 
 ```bash
 sh create_data_tree.sh
+```
+
+Data sau khi generate có dạng:
+```bash
+root
+| 
+|___ images
+|       |___ train
+|       |       |___ frame_xxxxxx.jpg
+|       |       |___ ...
+|       |___ val
+|               |___ frame_xxxxxx.jpg
+|               |___ ...       
+|        
+|___ labels
+        |___ train
+        |       |___ frame_xxxxxx.txt
+        |       |___ ...
+        |___ val
+                |___ frame_xxxxxx.txt
+                |___ ...      
 ```
 
 
