@@ -1,21 +1,20 @@
 # Running Tutorial
-## Data tree format
-Chuẩn thư mục dữ liệu dạng:
 
-Data_root_dir
-|
-|
-|___ images
-|       |
-|       |___ train
-|              |___ frame_000000.jpg
-|              |___ frame_000001.jpg
-|              |___ . . .
-|
-|___ labels
-  
+### Training Custom Data
+**Follow** [Training Custom Data](https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data)
 
+**Lưu ý:**
 
+1. Trong file **data.yaml**, thay đổi nc = 1, names = ['person']. Thay đổi **train** và **val** bằng absolute path thay vì relative path với **path**
+2. Nên tạo file data config yaml trong yolov5/data/
+3. Training với checkpoint **crowdhuman_yolov5** cần xoá phần Optimizer, nếu không sẽ bị conflict trong quá trình training
+4. File [hyp.scratch.yaml](https://github.com/ultralytics/yolov5/issues/607) trong trường hợp repo không có (để trong folder yolov5/data/)
+5. Training script
+
+```bash
+python train.py --data {data_yaml_file_config} --epochs {num_epochs} --batch {batches} --weights {weights path} --cfg {model config path}
+```
+Nếu sử dụng checkpoint **crowdhuman_yolov5** có thể sử dụng config file của yolov5m trong yolov5/models/yolov5m.yaml
 
 
 
