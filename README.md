@@ -1,11 +1,25 @@
 # Running Tutorial
 
 ### Generate VTX data
+Trong file **generate_data/combine_train_data.py**:
+Thay **root_frames_dir** và **root_labels_dir** bằng folder có format:
+
+root
+|___ VID_NAME_1
+|       |___ frame_xxxxxx.jpg
+|       |___ ...
+|___ VID_NAME_2
+        |___ frame_xxxxxx.jpg
+        |___ ...
+
 Trong thư mục **generate_data**:
+
+
 
 ```bash
 sh create_data_tree.sh
 ```
+
 
 ### Training Custom Data
 **Follow** [Training Custom Data](https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data)
@@ -24,13 +38,23 @@ python train.py --data {data_yaml_file_config} --epochs {num_epochs} --batch {ba
 ```
 Nếu sử dụng checkpoint **crowdhuman_yolov5** có thể sử dụng config file của yolov5m trong yolov5/models/yolov5m.yaml
 
+Kết quả sau khi training được lưu trong /yolov5/runs/train/exp{x}
+
 ### Evaluate
 ```bash
 python test.py --data {data_yaml_file_config} --weights {weights_path} --save-txt --save-conf
 ```
-Trong đó file **data config yaml** để **train path** và **val path** là absolute path đến test dataset
+Trong đó file **data config yaml** để **train path** và **val path** là absolute path đến thư mục images của test data (model test toàn bộ thư mục images)
 
+File label sau khi evaluate được lưu trong /yolov5/runs/test/exp{x}
 
+### Inferrence
+```bash
+python detect.py --source {data_source_path} --weights {weights_path} --save-txt --save-conf
+```
+Trong đó source có thể path đến 1 ảnh hoặc cả folder ảnh
+
+Kết quả Inference được lưu trong yolov5/runs/detect/exp{x}
 
 
 
