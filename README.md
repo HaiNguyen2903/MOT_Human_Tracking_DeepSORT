@@ -1,10 +1,18 @@
 # Running Tutorial
 
+### Generate VTX data
+Trong thư mục **generate_data**:
+
+```bash
+sh create_data_tree.sh
+```
+
 ### Training Custom Data
 **Follow** [Training Custom Data](https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data)
 
 **Lưu ý:**
 
+0. Tạo data folder đúng format folder do YoloV5 check label path theo image path.
 1. Trong file **data.yaml**, thay đổi nc = 1, names = ['person']. Thay đổi **train** và **val** bằng absolute path thay vì relative path với **path**
 2. Nên tạo file data config yaml trong yolov5/data/
 3. Training với checkpoint **crowdhuman_yolov5** cần xoá phần Optimizer, nếu không sẽ bị conflict trong quá trình training
@@ -15,6 +23,14 @@
 python train.py --data {data_yaml_file_config} --epochs {num_epochs} --batch {batches} --weights {weights path} --cfg {model config path}
 ```
 Nếu sử dụng checkpoint **crowdhuman_yolov5** có thể sử dụng config file của yolov5m trong yolov5/models/yolov5m.yaml
+
+### Evaluate
+```bash
+python test.py --data {data_yaml_file_config} --weights {weights_path} --save-txt --save-conf
+```
+Trong đó file **data config yaml** để **train path** và **val path** là absolute path đến test dataset
+
+
 
 
 
