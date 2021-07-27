@@ -1,3 +1,24 @@
+# Running Tutorial
+## Data tree format
+Chuẩn thư mục dữ liệu dạng:
+
+Data_root_dir
+|
+|
+|___ images
+|       |
+|       |___ train
+|              |___ frame_000000.jpg
+|              |___ frame_000001.jpg
+|              |___ . . .
+|
+|___ labels
+  
+
+
+
+
+
 # Yolov5 + Deep Sort with PyTorch
 
 
