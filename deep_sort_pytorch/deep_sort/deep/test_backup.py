@@ -86,7 +86,7 @@ with torch.no_grad():
         gallery_features = torch.cat((gallery_features, features), dim=0)
         gallery_labels = torch.cat((gallery_labels, labels))
 
-gallery_labels -= 2
+# gallery_labels -= 2
 
 # save features
 features = {

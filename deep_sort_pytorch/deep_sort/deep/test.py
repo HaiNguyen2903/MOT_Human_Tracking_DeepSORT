@@ -18,6 +18,7 @@ parser.add_argument("--gpu-id", default=1, type=int)
 parser.add_argument("--ckpt", default="./checkpoint/ckpt.t7", type=str)
 parser.add_argument("--batch", default=8, type=int)
 
+
 args = parser.parse_args()
 
 # device
