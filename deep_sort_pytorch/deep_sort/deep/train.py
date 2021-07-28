@@ -17,6 +17,7 @@ parser.add_argument("--gpu-id", default=0, type=int)
 parser.add_argument("--lr", default=0.1, type=float)
 parser.add_argument("--interval", '-i', default=20, type=int)
 parser.add_argument('--resume', '-r', action='store_true')
+parser.add_argument('--ckpt', default = './checkpoint/ckpt.t7', type=str)
 args = parser.parse_args()
 
 # device
@@ -59,9 +60,9 @@ start_epoch = 0
 net = Net(num_classes=num_classes)
 if args.resume:
     assert os.path.isfile(
-        "./checkpoint/ckpt.t7"), "Error: no checkpoint file found!"
-    print('Loading from checkpoint/ckpt.t7')
-    checkpoint = torch.load("./checkpoint/ckpt.t7")
+        args.ckpt), "Error: no checkpoint file found!"
+    print('Loading from {}'.format(args.ckpt))
+    checkpoint = torch.load(args.ckpt)
     # import ipdb; ipdb.set_trace()
     net_dict = checkpoint['net_dict']
     model_dict = net.state_dict()
