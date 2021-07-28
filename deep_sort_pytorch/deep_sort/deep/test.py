@@ -5,12 +5,19 @@ import torchvision
 import argparse
 import os
 
+from torchvision.datasets.folder import default_loader
+from traitlets.traitlets import default
+
 from model import Net
+from IPython import embed
 
 parser = argparse.ArgumentParser(description="Train on market1501")
 parser.add_argument("--data-dir", default='data', type=str)
 parser.add_argument("--no-cuda", action="store_true")
 parser.add_argument("--gpu-id", default=0, type=int)
+parser.add_argument("--ckpt", default="./checkpoint/ckpt.t7", type=str)
+parser.add_argument("--batch", default=8, type=int)
+
 args = parser.parse_args()
 
 # device
@@ -31,21 +38,28 @@ transform = torchvision.transforms.Compose([
 ])
 queryloader = torch.utils.data.DataLoader(
     torchvision.datasets.ImageFolder(query_dir, transform=transform),
-    batch_size=64, shuffle=False
+    batch_size=args.batch, shuffle=False
 )
 galleryloader = torch.utils.data.DataLoader(
     torchvision.datasets.ImageFolder(gallery_dir, transform=transform),
-    batch_size=64, shuffle=False
+    batch_size=args.batch, shuffle=False
 )
 
 # net definition
 net = Net(reid=True)
+
 assert os.path.isfile(
-    "./checkpoint/ckpt.t7"), "Error: no checkpoint file found!"
-print('Loading from checkpoint/ckpt.t7')
-checkpoint = torch.load("./checkpoint/ckpt.t7")
+    args.ckpt), "Error: no checkpoint file found!"
+print('Loading from {}'.format(args.ckpt))
+checkpoint = torch.load(args.ckpt, map_location=torch.device('cpu'))
+
 net_dict = checkpoint['net_dict']
-net.load_state_dict(net_dict, strict=False)
+
+'''
+Error step
+'''
+net.load_state_dict(net_dict, strict=False)    
+
 net.eval()
 net.to(device)
 
@@ -58,7 +72,9 @@ gallery_labels = torch.tensor([]).long()
 with torch.no_grad():
     for idx, (inputs, labels) in enumerate(queryloader):
         inputs = inputs.to(device)
+
         features = net(inputs).cpu()
+
         query_features = torch.cat((query_features, features), dim=0)
         query_labels = torch.cat((query_labels, labels))
 

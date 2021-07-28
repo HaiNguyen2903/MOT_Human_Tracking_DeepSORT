@@ -5,4 +5,5 @@ yolov5/runs
 yolov5/wandb
 test_dataset
 combine_dataset
+deep_sort_pytorch/deep_sort/deep/features.pth
 
