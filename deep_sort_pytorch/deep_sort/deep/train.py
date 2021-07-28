@@ -18,6 +18,8 @@ parser.add_argument("--lr", default=0.1, type=float)
 parser.add_argument("--interval", '-i', default=20, type=int)
 parser.add_argument('--resume', '-r', action='store_true')
 parser.add_argument('--ckpt', default = './checkpoint/ckpt.t7', type=str)
+parser.add_argument('--epochs', default=10, type=int)
+
 args = parser.parse_args()
 
 # device
@@ -199,7 +201,7 @@ def lr_decay():
 
 
 def main():
-    for epoch in range(start_epoch, start_epoch+40):
+    for epoch in range(start_epoch, start_epoch + args.epochs):
         train_loss, train_err = train(epoch)
         test_loss, test_err = test(epoch)
         draw_curve(epoch, train_loss, train_err, test_loss, test_err)
