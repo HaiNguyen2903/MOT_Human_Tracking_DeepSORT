@@ -1,3 +1,102 @@
+# Running Tutorial
+
+### Generate VTX data
+Trong file **generate_data/combine_train_data.py**:
+Thay **root_frames_dir** và **root_labels_dir** bằng folder có format:
+
+```bash
+root
+| 
+|___ VID_NAME_1
+|       |___ frame_xxxxxx.jpg
+|       |___ ...
+|___ VID_NAME_2
+        |___ frame_xxxxxx.jpg
+        |___ ...
+```
+
+```bash
+root
+| 
+|___ VID_NAME_1
+|       |___ frame_xxxxxx.txt
+|       |___ ...
+|___ VID_NAME_2
+        |___ frame_xxxxxx.txt
+        |___ ...
+```
+
+Trong thư mục **generate_data**:
+
+```bash
+sh create_data_tree.sh
+```
+
+Data sau khi generate có dạng:
+```bash
+root
+| 
+|___ images
+|       |___ train
+|       |       |___ frame_xxxxxx.jpg
+|       |       |___ ...
+|       |___ val
+|               |___ frame_xxxxxx.jpg
+|               |___ ...       
+|        
+|___ labels
+        |___ train
+        |       |___ frame_xxxxxx.txt
+        |       |___ ...
+        |___ val
+                |___ frame_xxxxxx.txt
+                |___ ...      
+```
+
+
+### Training Custom Data
+**Follow** [Training Custom Data](https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data)
+
+**Lưu ý:**
+
+0. Tạo data folder đúng format folder do YoloV5 check label path theo image path.
+1. Trong file **data.yaml**, thay đổi nc = 1, names = ['person']. Thay đổi **train** và **val** bằng absolute path thay vì relative path với **path**
+2. Nên tạo file data config yaml trong yolov5/data/
+3. Training với checkpoint **crowdhuman_yolov5** cần xoá phần Optimizer, nếu không sẽ bị conflict trong quá trình training
+4. File [hyp.scratch.yaml](https://github.com/ultralytics/yolov5/issues/607) trong trường hợp repo không có (để trong folder yolov5/data/)
+5. Training script
+
+```bash
+python train.py --data {data_yaml_file_config} --epochs {num_epochs} --batch {batches} --weights {weights path} --cfg {model config path}
+```
+Nếu sử dụng checkpoint **crowdhuman_yolov5** có thể sử dụng config file của yolov5m trong yolov5/models/yolov5m.yaml
+
+Kết quả sau khi training được lưu trong /yolov5/runs/train/exp{x}. 
+
+**Checkpoint model đã finetune và training 30 epoch trên VTX DATA: [Checkpoint](https://wandb.ai/hainguyen/YOLOv5/artifacts/model/run_3gqwg2vr_model/ebe1245d78646d98df91/files)**
+
+### Evaluate
+```bash
+python test.py --data {data_yaml_file_config} --weights {weights_path} --save-txt --save-conf
+```
+Trong đó file **data config yaml** để **train path** và **val path** là absolute path đến thư mục images của test data (model test toàn bộ thư mục images)
+
+File label sau khi evaluate được lưu trong /yolov5/runs/test/exp{x}
+
+Kết quả evaluate **Finetune Model** trên VTX DATA sau khi train 30 epochs và **Model** pretrained trên CrowdHman Dataset: **[Evaluation Results](https://docs.google.com/spreadsheets/d/1BOKNfHO-Ar7BzfpYRyFjux44B-I44XICpk7thhqd3MY/edit?fbclid=IwAR1GgUpXwZGpfFvW5TSdUTRWC09U4OIxLK2ajcDB218c0WngXt9ypyqVNhc#gid=0)**
+
+
+
+### Inferrence
+```bash
+python detect.py --source {data_source_path} --weights {weights_path} --save-txt --save-conf
+```
+Trong đó source có thể path đến 1 ảnh hoặc cả folder ảnh
+
+Kết quả Inference được lưu trong yolov5/runs/detect/exp{x}
+
+
+
 # Yolov5 + Deep Sort with PyTorch
 
 
