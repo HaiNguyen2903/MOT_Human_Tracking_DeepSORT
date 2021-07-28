@@ -21,10 +21,9 @@ parser.add_argument("--batch", default=8, type=int)
 args = parser.parse_args()
 
 # device
-# device = "cuda:{}".format(
-#     args.gpu_id) if torch.cuda.is_available() and not args.no_cuda else "cpu"
+device = "cuda:{}".format(
+    args.gpu_id) if torch.cuda.is_available() and not args.no_cuda else "cpu"
 
-device = torch.device(1)
 
 if torch.cuda.is_available() and not args.no_cuda:
     cudnn.benchmark = True
@@ -54,7 +53,7 @@ net = Net(reid=True)
 assert os.path.isfile(
     args.ckpt), "Error: no checkpoint file found!"
 print('Loading from {}'.format(args.ckpt))
-checkpoint = torch.load(args.ckpt, map_location=device)
+checkpoint = torch.load(args.ckpt, map_location=device['cuda'])
 
 net_dict = checkpoint['net_dict']
 
@@ -62,13 +61,9 @@ net.load_state_dict(net_dict, strict=False)
 
 net.eval()
 
-'''
-For multiple gpu
-'''
-
-# net.to(device)
 
 net.to(device)
+
 
 # compute features
 query_features = torch.tensor([]).float()
@@ -91,7 +86,7 @@ with torch.no_grad():
         gallery_features = torch.cat((gallery_features, features), dim=0)
         gallery_labels = torch.cat((gallery_labels, labels))
 
-# gallery_labels -= 2
+gallery_labels -= 2
 
 # save features
 features = {

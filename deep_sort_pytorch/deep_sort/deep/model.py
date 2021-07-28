@@ -50,8 +50,9 @@ def make_layers(c_in, c_out, repeat_times, is_downsample=False):
             blocks += [BasicBlock(c_out, c_out), ]
     return nn.Sequential(*blocks)
 
-# was 351
+
 class Net(nn.Module):
+    # was 351 class 
     def __init__(self, num_classes=751, reid=False):
         super(Net, self).__init__()
         # 3 128 64
