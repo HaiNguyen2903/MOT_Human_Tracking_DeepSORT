@@ -53,7 +53,7 @@ net = Net(reid=True)
 assert os.path.isfile(
     args.ckpt), "Error: no checkpoint file found!"
 print('Loading from {}'.format(args.ckpt))
-checkpoint = torch.load(args.ckpt, map_location=device['cuda'])
+checkpoint = torch.load(args.ckpt)
 
 net_dict = checkpoint['net_dict']
 
