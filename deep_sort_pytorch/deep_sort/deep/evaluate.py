@@ -32,4 +32,43 @@ top1correct = gl[res].eq(ql).sum().item()
 
 print("Accuracy top 1: {:.3f}".format(top1correct / ql.size(0)))
 
-embed()
+
+def calculate_precision_k(features, k=5):
+
+    qf = features["qf"]
+    ql = features["ql"]
+    gf = features["gf"]
+    gl = features["gl"]
+
+    # matrix of confidence with shape (querry frames x gallery frames)
+    scores = qf.mm(gf.t())
+
+    # return vector of index in scores metric that have highest score for each querry: len = querry frame
+    res = scores.topk(k, dim=1)[1]
+
+    # top_pred for each query
+    pred = gl[res]
+
+    # average p@k for all queries
+    avg_acc = 0
+
+    # for each query
+    for i in range(ql.size(0)): 
+        # number of correct label in top k
+        correct = 0
+        # count number of label value in pred equal to true label
+        correct += pred[i].eq(ql[i]).sum().item()
+
+        # acc for each query
+        acc = correct/k
+        
+        avg_acc += acc
+
+    # calculate average acc
+    avg_acc /= ql.size(0)
+
+    print('P@{}: {:.3f}'.format(k, avg_acc))
+    return avg_acc
+
+if __name__ == '__main__':
+    calculate_precision_k(features)
