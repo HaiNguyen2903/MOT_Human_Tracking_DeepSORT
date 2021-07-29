@@ -9,4 +9,4 @@ deep_sort_pytorch/deep_sort/deep/checkpoint
 reid_dataset
 debug.ipynb
 deep_sort_pytorch/deep_sort/deep/checkpoint
-deep_sort_pytorch/deep_sort/deep/features.pth
+deep_sort_pytorch/deep_sort/deep/predicts

@@ -17,16 +17,13 @@ parser.add_argument("--no-cuda", action="store_true")
 parser.add_argument("--gpu-id", default=1, type=int)
 parser.add_argument("--ckpt", default="./checkpoint/ckpt.t7", type=str)
 parser.add_argument("--batch", default=8, type=int)
-parser.add_argument("--save-path", default="predicts/features.pth", type=str)
 
 args = parser.parse_args()
 
 # device
-# device = "cuda:{}".format(
-#     args.gpu_id) if torch.cuda.is_available() and not args.no_cuda else "cpu"
+device = "cuda:{}".format(
+    args.gpu_id) if torch.cuda.is_available() and not args.no_cuda else "cpu"
 
-device = torch.device(1)
-# device = torch.device("cuda:1")
 
 if torch.cuda.is_available() and not args.no_cuda:
     cudnn.benchmark = True
@@ -45,12 +42,9 @@ queryloader = torch.utils.data.DataLoader(
     torchvision.datasets.ImageFolder(query_dir, transform=transform),
     batch_size=args.batch, shuffle=False
 )
-'''
-try load gallery random
-'''
 galleryloader = torch.utils.data.DataLoader(
     torchvision.datasets.ImageFolder(gallery_dir, transform=transform),
-    batch_size=args.batch, shuffle=True
+    batch_size=args.batch, shuffle=False
 )
 
 # net definition
@@ -59,7 +53,7 @@ net = Net(reid=True)
 assert os.path.isfile(
     args.ckpt), "Error: no checkpoint file found!"
 print('Loading from {}'.format(args.ckpt))
-checkpoint = torch.load(args.ckpt, map_location=device)
+checkpoint = torch.load(args.ckpt)
 
 net_dict = checkpoint['net_dict']
 
@@ -67,13 +61,9 @@ net.load_state_dict(net_dict, strict=False)
 
 net.eval()
 
-'''
-For multiple gpu
-'''
-
-# net.to(device)
 
 net.to(device)
+
 
 # compute features
 query_features = torch.tensor([]).float()
@@ -83,7 +73,6 @@ gallery_labels = torch.tensor([]).long()
 
 with torch.no_grad():
     for idx, (inputs, labels) in enumerate(queryloader):
-
         inputs = inputs.to(device)
 
         features = net(inputs).cpu()
@@ -106,4 +95,4 @@ features = {
     "gf": gallery_features,
     "gl": gallery_labels
 }
-torch.save(features, args.save_path)
+torch.save(features, "features.pth")

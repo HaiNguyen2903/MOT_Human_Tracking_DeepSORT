@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import torch
 import torch.backends.cudnn as cudnn
 import torchvision
-
+from IPython import embed
 from model import Net
 
 parser = argparse.ArgumentParser(description="Train on market1501")
@@ -19,12 +19,19 @@ parser.add_argument("--interval", '-i', default=20, type=int)
 parser.add_argument('--resume', '-r', action='store_true')
 parser.add_argument('--ckpt', default = './checkpoint/ckpt.t7', type=str)
 parser.add_argument('--epochs', default=10, type=int)
+parser.add_argument('--batch', default=16, type=int)
+parser.add_argument('--save-ckpt-path', default='checkpoint/best_ckpt.t7', type=str)
+parser.add_argument('--save-result', default='predicts/train.jpg', type=str)
 
 args = parser.parse_args()
 
 # device
-device = "cuda:{}".format(
-    args.gpu_id) if torch.cuda.is_available() and not args.no_cuda else "cpu"
+# device = "cuda:{}".format(
+#     args.gpu_id) if torch.cuda.is_available() and not args.no_cuda else "cpu"
+
+device = torch.device(1)
+
+
 if torch.cuda.is_available() and not args.no_cuda:
     cudnn.benchmark = True
 
@@ -47,24 +54,26 @@ transform_test = torchvision.transforms.Compose([
 ])
 trainloader = torch.utils.data.DataLoader(
     torchvision.datasets.ImageFolder(train_dir, transform=transform_train),
-    batch_size=64, shuffle=True
+    batch_size=args.batch, shuffle=True
 )
 testloader = torch.utils.data.DataLoader(
     torchvision.datasets.ImageFolder(test_dir, transform=transform_test),
-    batch_size=64, shuffle=True
+    batch_size=args.batch, shuffle=True
 )
 num_classes = max(len(trainloader.dataset.classes),
                   len(testloader.dataset.classes))
 
 print("Num class:", num_classes)
 # net definition
+
 start_epoch = 0
 net = Net(num_classes=num_classes)
+
 if args.resume:
     assert os.path.isfile(
         args.ckpt), "Error: no checkpoint file found!"
     print('Loading from {}'.format(args.ckpt))
-    checkpoint = torch.load(args.ckpt)
+    checkpoint = torch.load(args.ckpt, map_location=device)
     # import ipdb; ipdb.set_trace()
     net_dict = checkpoint['net_dict']
     model_dict = net.state_dict()
@@ -108,12 +117,16 @@ def train(epoch):
         training_loss += loss.item()
         train_loss += loss.item()
         correct += outputs.max(dim=1)[1].eq(labels).sum().item()
+
+        # res = scores.topk(5, dim=1)[1][:, 0]
+        # top1correct = gl[res].eq(ql).sum().item()
+
         total += labels.size(0)
 
         # print
         if (idx+1) % interval == 0:
             end = time.time()
-            print("[progress:{:.1f}%]time:{:.2f}s Loss:{:.5f} Correct:{}/{} Acc:{:.3f}%".format(
+            print("Epoch: {} \t [progress: {:.1f}%] \t time: {:.2f}s \t Loss:{:.5f} \t Correct:{}/{} \t Acc:{:.3f}%".format(epoch+1,
                 100.*(idx+1)/len(trainloader), end-start, training_loss /
                 interval, correct, total, 100.*correct/total
             ))
@@ -131,6 +144,7 @@ def test(epoch):
     total = 0
     start = time.time()
     with torch.no_grad():
+        print("Testing ...")
         for idx, (inputs, labels) in enumerate(testloader):
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = net(inputs)
@@ -140,9 +154,8 @@ def test(epoch):
             correct += outputs.max(dim=1)[1].eq(labels).sum().item()
             total += labels.size(0)
 
-        print("Testing ...")
         end = time.time()
-        print("[progress:{:.1f}%]time:{:.2f}s Loss:{:.5f} Correct:{}/{} Acc:{:.3f}%".format(
+        print("Epoch: {} \t [progress: {:.1f}%] \t time: {:.2f}s \t Loss:{:.5f} \t Correct:{}/{} \t Acc:{:.3f}%".format(epoch+1,
             100.*(idx+1)/len(testloader), end-start, test_loss /
             len(testloader), correct, total, 100.*correct/total
         ))
@@ -151,7 +164,7 @@ def test(epoch):
     acc = 100.*correct/total
     if acc > best_acc:
         best_acc = acc
-        print("Saving parameters to checkpoint/best_ckpt.t7")
+        print("Saving parameters to {}".format(args.save_ckpt_path))
         checkpoint = {
             'net_dict': net.state_dict(),
             'acc': acc,
@@ -159,7 +172,7 @@ def test(epoch):
         }
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
-        torch.save(checkpoint, './checkpoint/best_ckpt.t7')
+        torch.save(checkpoint, args.save_ckpt_path)
 
     return test_loss/len(testloader), 1. - correct/total
 
@@ -168,8 +181,8 @@ def test(epoch):
 x_epoch = []
 record = {'train_loss': [], 'train_err': [], 'test_loss': [], 'test_err': []}
 fig = plt.figure()
-ax0 = fig.add_subplot(121, title="loss")
-ax1 = fig.add_subplot(122, title="top1err")
+ax0 = fig.add_subplot(121, title="Loss")
+ax1 = fig.add_subplot(122, title="Top 1 Error")
 
 
 def draw_curve(epoch, train_loss, train_err, test_loss, test_err):
@@ -187,7 +200,7 @@ def draw_curve(epoch, train_loss, train_err, test_loss, test_err):
     if epoch == 0:
         ax0.legend()
         ax1.legend()
-    fig.savefig("train.jpg")
+    fig.savefig(args.save_result)
 
 # lr decay
 
