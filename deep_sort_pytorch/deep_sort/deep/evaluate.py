@@ -4,7 +4,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description="Train on market1501")
 parser.add_argument("--predict-path", default='predicts/features_train25epochs.pth', type=str)
-
+parser.add_argument("--topk", default=5, type=int)
 args = parser.parse_args()
 
 features = torch.load(args.predict_path)
@@ -71,4 +71,4 @@ def calculate_precision_k(features, k=5):
     return avg_acc
 
 if __name__ == '__main__':
-    calculate_precision_k(features)
+    calculate_precision_k(features, args.topk)
