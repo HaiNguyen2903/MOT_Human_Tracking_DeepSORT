@@ -75,7 +75,7 @@ Kết quả sau khi training được lưu trong /yolov5/runs/train/exp{x}.
 
 **Checkpoint model đã finetune và training 30 epoch trên VTX DATA: [Checkpoint](https://wandb.ai/hainguyen/YOLOv5/artifacts/model/run_3gqwg2vr_model/ebe1245d78646d98df91/files)**
 
-### Evaluate
+### Evaluate Detection Module (YOLOV5)
 ```bash
 python test.py --data {data_yaml_file_config} --weights {weights_path} --save-txt --save-conf
 ```
@@ -87,7 +87,7 @@ Kết quả evaluate **Finetune Model** trên VTX DATA sau khi train 30 epochs v
 
 
 
-### Inferrence
+### Inferrence Detection Module (YOLOV5)
 ```bash
 python detect.py --source {data_source_path} --weights {weights_path} --save-txt --save-conf
 ```
