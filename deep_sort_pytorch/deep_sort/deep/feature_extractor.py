@@ -8,7 +8,7 @@ from .model import Net
 
 
 class Extractor(object):
-    def __init__(self, model_path, use_cuda=True, reid_classes):
+    def __init__(self, model_path, use_cuda, reid_classes):
         self.net = Net(num_classes=reid_classes, reid=True)
         self.device = "cuda" if torch.cuda.is_available() and use_cuda else "cpu"
         state_dict = torch.load(model_path, map_location=torch.device(self.device))[

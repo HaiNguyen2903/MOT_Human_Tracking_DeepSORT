@@ -20,10 +20,9 @@ import torch
 import torch.backends.cudnn as cudnn
 from generate_data.gt_utils import get_object_frame
 
-from IPython import embed
 
 palette = (2 ** 11 - 1, 2 ** 15 - 1, 2 ** 20 - 1)
-gt_path = '/data.local/all/hainp/yolov5_deep_sort/deep_sort_copy/track_dataset/gt.txt'
+
 
 def xyxy_to_xywh(*xyxy):
     """" Calculates the relative bounding box from absolute pixel values. """
@@ -108,17 +107,17 @@ def detect(opt):
     cfg.merge_from_file(opt.config_deepsort)
     attempt_download(deep_sort_weights, repo='mikel-brostrom/Yolov5_DeepSort_Pytorch')
 
-    # deepsort = DeepSort(cfg.DEEPSORT.REID_CKPT,
-    #                     max_dist=cfg.DEEPSORT.MAX_DIST, min_confidence=cfg.DEEPSORT.MIN_CONFIDENCE,
-    #                     nms_max_overlap=cfg.DEEPSORT.NMS_MAX_OVERLAP, max_iou_distance=cfg.DEEPSORT.MAX_IOU_DISTANCE,
-    #                     max_age=cfg.DEEPSORT.MAX_AGE, n_init=cfg.DEEPSORT.N_INIT, nn_budget=cfg.DEEPSORT.NN_BUDGET,
-    #                     use_cuda=True, reid_classes=cfg.DEEPSORT.REID_CLASSES_DIM)
-
     deepsort = DeepSort(cfg.DEEPSORT.REID_CKPT,
                         max_dist=cfg.DEEPSORT.MAX_DIST, min_confidence=cfg.DEEPSORT.MIN_CONFIDENCE,
                         nms_max_overlap=cfg.DEEPSORT.NMS_MAX_OVERLAP, max_iou_distance=cfg.DEEPSORT.MAX_IOU_DISTANCE,
                         max_age=cfg.DEEPSORT.MAX_AGE, n_init=cfg.DEEPSORT.N_INIT, nn_budget=cfg.DEEPSORT.NN_BUDGET,
-                        use_cuda=True)
+                        use_cuda=True, reid_classes=cfg.DEEPSORT.REID_CLASSES_DIM)
+
+    # deepsort = DeepSort(cfg.DEEPSORT.REID_CKPT,
+    #                     max_dist=cfg.DEEPSORT.MAX_DIST, min_confidence=cfg.DEEPSORT.MIN_CONFIDENCE,
+    #                     nms_max_overlap=cfg.DEEPSORT.NMS_MAX_OVERLAP, max_iou_distance=cfg.DEEPSORT.MAX_IOU_DISTANCE,
+    #                     max_age=cfg.DEEPSORT.MAX_AGE, n_init=cfg.DEEPSORT.N_INIT, nn_budget=cfg.DEEPSORT.NN_BUDGET,
+    #                     use_cuda=True)
 
     # Initialize
     device = select_device(opt.device)
@@ -165,11 +164,8 @@ def detect(opt):
     txt_file_name = source.split('/')[-1].split('.')[0]
     txt_path = str(Path(out)) + '/' + txt_file_name + '.txt'
 
-    group_frame = get_object_frame(gt_path)
+    group_frame = get_object_frame("gt.txt")
     
-    '''
-    =================================================================================
-    ''' 
     for frame_idx, (path, img, im0s, vid_cap) in enumerate(dataset):
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
@@ -181,21 +177,10 @@ def detect(opt):
         t1 = time_synchronized()
         pred = model(img, augment=opt.augment)[0]
 
-        embed(header='debug pred')
-
         # Apply NMS
-
-        # Returns: list of detections, on (n,6) tensor per image [xyxy, conf, cls]
         pred = non_max_suppression(
             pred, opt.conf_thres, opt.iou_thres, classes=opt.classes, agnostic=opt.agnostic_nms)
         t2 = time_synchronized()
-
-        embed(header='debug pred after nms')
-
-        # Example: [tensor([[444.50000,  33.65625, 492.00000, 113.87500,   0.76025,  58.00000]], device='cuda:0')]
-
-        # img0 shape: 1080 x 1920 x 3
-        # s: 384x640
 
         # Process detections
         for i, det in enumerate(pred):  # detections per image
@@ -205,14 +190,10 @@ def detect(opt):
                 p, s, im0 = path, '', im0s
 
             s += '%gx%g ' % img.shape[2:]  # print string
-
-            # 'inference/output/NVR-CH01_S20210608-084648_E20210608-084709.mp4'
             save_path = str(Path(out) / Path(p).name)
-            
-            embed(header='debug det')
 
             if det is not None and len(det):
-                # Rescale boxes from img_size to im0 size (from 384x640 to 1080x1920x3)
+                # Rescale boxes from img_size to im0 size
                 det[:, :4] = scale_coords(
                     img.shape[2:], det[:, :4], im0.shape).round()
 
@@ -224,7 +205,6 @@ def detect(opt):
                 xywh_bboxs = []
                 confs = []
 
-                embed(header = 'debug scale box')
                 # Adapt detections to deep sort input format
                 for *xyxy, conf, cls in det:
                     # to deep sort format
@@ -237,11 +217,7 @@ def detect(opt):
                 confss = torch.Tensor(confs)
                 
                 # pass detections to deepsort
-
-                # update tracker, return tensor of xy_xy + track id 
                 outputs = deepsort.update(xywhs, confss, im0)
-
-                embed(header='debug input for deepsort')
 
                 # draw boxes for visualization
                 if len(outputs) > 0 and opt.mode == "predict":
@@ -296,20 +272,6 @@ def detect(opt):
 
                     vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                 vid_writer.write(im0)
-
-    
-
-    # contain extracted frames
-    frame_dir = ''
-
-    # contain list of txt pred file coresponding for each frame
-    pred_dir = ''
-
-
-
-    '''
-    ===========================================================================================
-    '''
 
     if save_txt or save_vid:
         print('Results saved to %s' % os.getcwd() + os.sep + out)

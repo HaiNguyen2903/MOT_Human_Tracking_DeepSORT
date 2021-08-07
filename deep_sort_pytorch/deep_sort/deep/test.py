@@ -17,7 +17,7 @@ parser.add_argument("--no-cuda", action="store_true")
 parser.add_argument("--gpu-id", default=1, type=int)
 parser.add_argument("--ckpt", default="./checkpoint/ckpt.t7", type=str)
 parser.add_argument("--batch", default=8, type=int)
-parser.add_argument("--save-path", default="predicts/features.pth", type=str)
+parser.add_argument("--save-path", default="predicts/features_original.pth", type=str)
 
 args = parser.parse_args()
 
@@ -90,12 +90,15 @@ with torch.no_grad():
 
         query_features = torch.cat((query_features, features), dim=0)
         query_labels = torch.cat((query_labels, labels))
+        # embed(header='query')
 
     for idx, (inputs, labels) in enumerate(galleryloader):
         inputs = inputs.to(device)
         features = net(inputs).cpu()
+
         gallery_features = torch.cat((gallery_features, features), dim=0)
         gallery_labels = torch.cat((gallery_labels, labels))
+        # embed(header='gallery')
 
 # gallery_labels -= 2
 

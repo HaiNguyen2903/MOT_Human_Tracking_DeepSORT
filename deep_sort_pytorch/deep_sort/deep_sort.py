@@ -15,7 +15,7 @@ class DeepSort(object):
         self.min_confidence = min_confidence
         self.nms_max_overlap = nms_max_overlap
 
-        self.extractor = Extractor(model_path, use_cuda=use_cuda)
+        self.extractor = Extractor(model_path, use_cuda=use_cuda, reid_classes=751)
 
         max_cosine_distance = max_dist
         metric = NearestNeighborDistanceMetric(
@@ -81,6 +81,9 @@ class DeepSort(object):
             Convert bbox from xtl_ytl_w_h to xc_yc_w_h
         Thanks JieChen91@github.com for reporting this bug!
         """
+
+        # convert xtl_ytl_w_h to xtl_ytl_xbr_ybr ? 
+        
         x, y, w, h = bbox_tlwh
         x1 = max(int(x), 0)
         x2 = min(int(x+w), self.width - 1)

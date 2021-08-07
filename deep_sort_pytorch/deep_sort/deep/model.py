@@ -50,7 +50,9 @@ def make_layers(c_in, c_out, repeat_times, is_downsample=False):
             blocks += [BasicBlock(c_out, c_out), ]
     return nn.Sequential(*blocks)
 
-
+'''
+Finetuned model
+'''
 class Net(nn.Module):
     # was 351 class (need fix to 751 to use ckpt.t7)
     def __init__(self, num_classes=751, reid=False):
@@ -101,6 +103,10 @@ class Net(nn.Module):
         x = self.classifier(x)
         return x
 
+
+'''
+original model
+'''
 # class Net(nn.Module):
 #     def __init__(self, num_classes=625, reid=True):
 #         super(Net, self).__init__()
