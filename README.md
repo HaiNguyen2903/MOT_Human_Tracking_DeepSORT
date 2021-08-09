@@ -209,9 +209,9 @@ python track_video.py --source {path/to/mp4/video}
 ```bash
 python track.py --frame_dir {path/to/frame/dir} --det_pred_dir {path/to/ensemble/predict/dir} --gt_path {path/to/gt/file} --output {path/to/output/dir} --save-txt 
 ```
-Where `det_pred_dir` is in `mmdetection` predict format, which is `<class_name> <confidence> <left> <top> <right> <bottom>` for each `txt` file. `gt file` is in `MOT` path
+Where `det_pred_dir` is in `mmdetection` predict format, which is `<class_name> <confidence> <left> <top> <right> <bottom>` for each `txt` file. `gt file` is in `MOT` format.
 
-The `output` is in `MOT` format, which is `<frame>, <id>, <bb_top>, <bb_left>, <bb_width>, <bb_height>, <conf>, <x>, <y>, <z>`
+The `output` is in `MOT` format, which is `<frame>, <id>, <bb_top>, <bb_left>, <bb_width>, <bb_height>, <conf>, <x>, <y>, <z>`.
 
 ### Tracking Evaluation
 Following tutorial from [this repo](https://github.com/ConstantSun/MOT_Evaluation)
