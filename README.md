@@ -1,8 +1,10 @@
-# Running Tutorial
+# Additional running tutorial
 
-### Generate VTX data
-Trong file **generate_data/combine_train_data.py**:
-Thay **root_frames_dir** và **root_labels_dir** bằng folder có format:
+## Detection Module
+
+### Generate VTX data for detection module
+
+In `generate_data/combine_train_data.py`, replace `root_frames_dir` and `root_labels_dir` by folder with format:
 
 ```bash
 root
@@ -26,13 +28,15 @@ root
         |___ ...
 ```
 
-Trong thư mục **generate_data**:
+Where `root_labels_dir` file is followed by `YOLO` labels format.
+
+In **generate_data** folder, run:
 
 ```bash
 sh create_data_tree.sh
 ```
 
-Data sau khi generate có dạng:
+Data format after generated:
 ```bash
 root
 | 
@@ -57,45 +61,146 @@ root
 ### Training Custom Data
 **Follow** [Training Custom Data](https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data)
 
-**Lưu ý:**
+**Note:**
 
-0. Tạo data folder đúng format folder do YoloV5 check label path theo image path.
-1. Trong file **data.yaml**, thay đổi nc = 1, names = ['person']. Thay đổi **train** và **val** bằng absolute path thay vì relative path với **path**
-2. Nên tạo file data config yaml trong yolov5/data/
-3. Training với checkpoint **crowdhuman_yolov5** cần xoá phần Optimizer, nếu không sẽ bị conflict trong quá trình training
-4. File [hyp.scratch.yaml](https://github.com/ultralytics/yolov5/issues/607) trong trường hợp repo không có (để trong folder yolov5/data/)
+0. Create data folder in the right format (YOLOV5 will check label paths corresponding to image paths.
+1. In `data.yaml` file, set `nc = 1`, `name = [person]`. Replace `train` and `val` with absolute paths instead of relative paths as in the above tutorial.
+2. `config yaml` file should be placed in `yolov5/data`.
+3. Training with `crowdhuman_yolov5 checkpoint` need to set `Optimizer: ...` as `None` first, or else it'll be conflict during training.
+4. File [hyp.scratch.yaml](https://github.com/ultralytics/yolov5/issues/607) in case it's not included in original repo (để trong folder yolov5/data/)
 5. Training script
 
 ```bash
 python train.py --data {data_yaml_file_config} --epochs {num_epochs} --batch {batches} --weights {weights path} --cfg {model config path}
 ```
-Nếu sử dụng checkpoint **crowdhuman_yolov5** có thể sử dụng config file của yolov5m trong yolov5/models/yolov5m.yaml
+If we use `crowdhuman_yolov5 checkpoint`, then we can use `yolov5m config file` in `yolov5/models/yolov5m.yaml`
 
-Kết quả sau khi training được lưu trong /yolov5/runs/train/exp{x}. 
+Training result will be saved in `/yolov5/runs/train/exp{x}`. 
 
-**Checkpoint model đã finetune và training 30 epoch trên VTX DATA: [Checkpoint](https://wandb.ai/hainguyen/YOLOv5/artifacts/model/run_3gqwg2vr_model/ebe1245d78646d98df91/files)**
+**Model best checkpoint after finetuned num class heads and training for 30 epoch on VTX DATA: [Checkpoint](https://wandb.ai/hainguyen/YOLOv5/artifacts/model/run_3gqwg2vr_model/ebe1245d78646d98df91/files)**
 
 ### Evaluate Detection Module (YOLOV5)
 ```bash
 python test.py --data {data_yaml_file_config} --weights {weights_path} --save-txt --save-conf
 ```
-Trong đó file **data config yaml** để **train path** và **val path** là absolute path đến thư mục images của test data (model test toàn bộ thư mục images)
+Where `data config yaml` file set `train path` and `val path` as absolute path to images folder of test data (the model will test all images in the folder)
 
-File label sau khi evaluate được lưu trong /yolov5/runs/test/exp{x}
+File label after evaluated will be save in `/yolov5/runs/test/exp{x}`
 
-Kết quả evaluate **Finetune Model** trên VTX DATA sau khi train 30 epochs và **Model** pretrained trên CrowdHman Dataset: **[Evaluation Results](https://docs.google.com/spreadsheets/d/1BOKNfHO-Ar7BzfpYRyFjux44B-I44XICpk7thhqd3MY/edit?fbclid=IwAR1GgUpXwZGpfFvW5TSdUTRWC09U4OIxLK2ajcDB218c0WngXt9ypyqVNhc#gid=0)**
-
+Evaluate result of `Finetune Model` on `VTX DATA` after training for 30 epochs and `Model pretrained on CrowdHman Dataset`: [Evaluation Results](https://docs.google.com/spreadsheets/d/1BOKNfHO-Ar7BzfpYRyFjux44B-I44XICpk7thhqd3MY/edit?fbclid=IwAR1GgUpXwZGpfFvW5TSdUTRWC09U4OIxLK2ajcDB218c0WngXt9ypyqVNhc#gid=0)
 
 
 ### Inferrence Detection Module (YOLOV5)
 ```bash
 python detect.py --source {data_source_path} --weights {weights_path} --save-txt --save-conf
 ```
-Trong đó source có thể path đến 1 ảnh hoặc cả folder ảnh
+Where source can be path to 1 image or a whole image folder
 
-Kết quả Inference được lưu trong yolov5/runs/detect/exp{x}
+Inference result is saved in `yolov5/runs/detect/exp{x}`
 
+## ReID module
+### Prepare data format for ReID module
+The data format for ReID module is:
+```bash
+root
+| 
+|___ train
+|       |___ id_1
+|       |     |___ frame_xxxxxx.jpg
+|       |     |___ ...
+|       |
+|       |___ id_2
+|       |     |___ frame_xxxxxx.jpg
+|       |     |___ ...       
+|       |
+|       |___ id_n
+|             |___ frame_xxxxxx.jpg
+|             |___ ...       
+|        
+|___ test
+|       |___ id_1
+|       |     |___ frame_xxxxxx.jpg
+|       |     |___ ...
+|       |
+|       |___ id_2
+|       |     |___ frame_xxxxxx.jpg
+|       |     |___ ...       
+|       |
+|       |___ id_n
+|             |___ frame_xxxxxx.jpg
+|             |___ ...
+|
+|___ gallery
+|       |___ id_1
+|       |     |___ frame_xxxxxx.jpg
+|       |     |___ ...
+|       |
+|       |___ id_2
+|       |     |___ frame_xxxxxx.jpg
+|       |     |___ ...       
+|       |
+|       |___ id_n
+|             |___ frame_xxxxxx.jpg
+|             |___ ...  
+|
+|___ query
+        |___ id_1
+        |     |___ frame_xxxxxx.jpg
+        |     |___ ...
+        |
+        |___ id_2
+        |     |___ frame_xxxxxx.jpg
+        |     |___ ...       
+        |
+        |___ id_n
+              |___ frame_xxxxxx.jpg
+              |___ ...  
+```
 
+For `VTX Data`, the `train` folder contains 90% of the combine train data, the `test` folder contains the rest 10%. 
+
+The `gallery` folder contains the whole test dataset. And the `query` folder is random splitted from `gallery`, 1 image for each id. 
+
+### Training ReID module
+The model have 2 checkpoints in the beginning. We can find those [here](https://drive.google.com/drive/folders/1xhG0kRH1EX5B9_Iz8gQJb7UNnn_riXi6).
+
+To use `ckpt.t7` weight, in `deep_sort_pytorch/deep_sort/deep/model.py`, use the `Author's finetuned model` and set `num_classes = 751`
+
+To use `original_ckpt.t7` weight, in `deep_sort_pytorch/deep_sort/deep/model.py`, use the `Original model` and set `num_classes = 625`
+
+To use the trained weight on `VTX DATA`, in `deep_sort_pytorch/deep_sort/deep/model.py`, use the `Author's finetuned model` and set `num_classes = 868`
+
+Training script:
+
+```bash
+python train.py --data-dir {path/to/data/root/dir} --ckpt {path/to/pretrained/reid/checkpoint} --save-ckpt-path {path/to/save/best/checkpoint} --save-result {path/to/save/training/curve/image}
+```
+
+You can find more arguments in `deep_sort_pytorch/deep_sort/deep/train.py`
+
+### Testing ReID module
+This step is used to create a features matrix for evaluating result.
+
+In `deep_sort_pytorch/deep_sort/deep`, run:
+
+```bash
+python test.py --data-dir {path/to/data/root/dir} --ckpt {path/to/reid/checkpoint} --save-path {path/to/save/features/metric}
+```
+
+### Evaluating ReID module
+
+In `deep_sort_pytorch/deep_sort/deep`, run:
+
+```bash
+python test.py --predict-path {path/to/saved/features/metric} --p_k {k in P@k evaluation} --map_n {n in mAP@n evaluation}
+```
+
+## Tracking
+
+### Using tracker
+
+### Tracking Evaluation
+Following tutorial from [this repo](https://github.com/ConstantSun/MOT_Evaluation)
 
 # Yolov5 + Deep Sort with PyTorch
 
