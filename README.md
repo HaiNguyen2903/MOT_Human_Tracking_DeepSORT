@@ -197,7 +197,21 @@ python test.py --predict-path {path/to/saved/features/metric} --p_k {k in P@k ev
 
 ## Tracking
 
-### Using tracker
+### Additional tracking source
+**Tracking with video (default):**
+
+```bash
+python track_video.py --source {path/to/mp4/video} 
+```
+
+**Tracking with ensemble predicted result instead:**
+
+```bash
+python track.py --frame_dir {path/to/frame/dir} --det_pred_dir {path/to/ensemble/predict/dir} --gt_path {path/to/gt/file} --output {path/to/output/dir} --save-txt 
+```
+Where `det_pred_dir` is in `mmdetection` predict format, which is `<class_name> <confidence> <left> <top> <right> <bottom>` for each `txt` file. `gt file` is in `MOT` path
+
+The `output` is in `MOT` format, which is `<frame>, <id>, <bb_top>, <bb_left>, <bb_width>, <bb_height>, <conf>, <x>, <y>, <z>`
 
 ### Tracking Evaluation
 Following tutorial from [this repo](https://github.com/ConstantSun/MOT_Evaluation)
