@@ -183,7 +183,7 @@ def detect(opt):
             pred, opt.conf_thres, opt.iou_thres, classes=opt.classes, agnostic=opt.agnostic_nms)
         t2 = time_synchronized()
 
-        print(pred)
+        print('PRED:', pred)
 
         # Process detections
         for i, det in enumerate(pred):  # detections per image
@@ -195,6 +195,7 @@ def detect(opt):
             s += '%gx%g ' % img.shape[2:]  # print string
             save_path = str(Path(out) / Path(p).name)
 
+            print('det:', det)
             if det is not None and len(det):
                 # Rescale boxes from img_size to im0 size
                 det[:, :4] = scale_coords(

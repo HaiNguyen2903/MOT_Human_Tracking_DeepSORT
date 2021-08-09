@@ -55,7 +55,7 @@ Finetuned model
 '''
 class Net(nn.Module):
     # was 351 class (need fix to 751 to use ckpt.t7)
-    def __init__(self, num_classes=751, reid=False):
+    def __init__(self, num_classes=868, reid=False):
         super(Net, self).__init__()
         # 3 128 64
         self.conv = nn.Sequential(
