@@ -107,15 +107,16 @@ def calculate_mAP_n(scores, n=5):
                 AP += precision_k / total_correct
 
                 # debug
-                # print('k: {}  total correct: {} \t pred_k: {} \t labels: {} \t correct_k: {} \t precision_k: {} \t AP: {}'.format(k, total_correct, pred_k[i], ql[i], correct_k, round(precision_k,3), round(AP,3)))
+                print('k: {}  total correct: {} \t pred_k: {} \t labels: {} \t correct_k: {} \t precision_k: {} \t AP: {}'.format(k, total_correct, pred_k[i], ql[i], correct_k, round(precision_k,3), round(AP,3)))
 
         # embed()
-
+        print()
+        print()
         # add AP to calculate mAP on all queries
         mAP += AP 
 
     mAP /= ql.size(0)
-
+    # print(pred_k.shape)
     print('mAP@{}: {:.3f}'.format(n, mAP))
     return mAP
 

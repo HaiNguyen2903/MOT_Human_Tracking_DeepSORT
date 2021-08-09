@@ -20,9 +20,8 @@ import torch
 import torch.backends.cudnn as cudnn
 from generate_data.gt_utils import get_object_frame
 
-
 palette = (2 ** 11 - 1, 2 ** 15 - 1, 2 ** 20 - 1)
-
+gt_path = '/data.local/all/hainp/yolov5_deep_sort/deep_sort_copy/track_dataset/gt.txt'
 
 def xyxy_to_xywh(*xyxy):
     """" Calculates the relative bounding box from absolute pixel values. """
@@ -107,17 +106,17 @@ def detect(opt):
     cfg.merge_from_file(opt.config_deepsort)
     attempt_download(deep_sort_weights, repo='mikel-brostrom/Yolov5_DeepSort_Pytorch')
 
-    deepsort = DeepSort(cfg.DEEPSORT.REID_CKPT,
-                        max_dist=cfg.DEEPSORT.MAX_DIST, min_confidence=cfg.DEEPSORT.MIN_CONFIDENCE,
-                        nms_max_overlap=cfg.DEEPSORT.NMS_MAX_OVERLAP, max_iou_distance=cfg.DEEPSORT.MAX_IOU_DISTANCE,
-                        max_age=cfg.DEEPSORT.MAX_AGE, n_init=cfg.DEEPSORT.N_INIT, nn_budget=cfg.DEEPSORT.NN_BUDGET,
-                        use_cuda=True, reid_classes=cfg.DEEPSORT.REID_CLASSES_DIM)
-
     # deepsort = DeepSort(cfg.DEEPSORT.REID_CKPT,
     #                     max_dist=cfg.DEEPSORT.MAX_DIST, min_confidence=cfg.DEEPSORT.MIN_CONFIDENCE,
     #                     nms_max_overlap=cfg.DEEPSORT.NMS_MAX_OVERLAP, max_iou_distance=cfg.DEEPSORT.MAX_IOU_DISTANCE,
     #                     max_age=cfg.DEEPSORT.MAX_AGE, n_init=cfg.DEEPSORT.N_INIT, nn_budget=cfg.DEEPSORT.NN_BUDGET,
-    #                     use_cuda=True)
+    #                     use_cuda=True, reid_classes=cfg.DEEPSORT.REID_CLASSES_DIM)
+
+    deepsort = DeepSort(cfg.DEEPSORT.REID_CKPT,
+                        max_dist=cfg.DEEPSORT.MAX_DIST, min_confidence=cfg.DEEPSORT.MIN_CONFIDENCE,
+                        nms_max_overlap=cfg.DEEPSORT.NMS_MAX_OVERLAP, max_iou_distance=cfg.DEEPSORT.MAX_IOU_DISTANCE,
+                        max_age=cfg.DEEPSORT.MAX_AGE, n_init=cfg.DEEPSORT.N_INIT, nn_budget=cfg.DEEPSORT.NN_BUDGET,
+                        use_cuda=True)
 
     # Initialize
     device = select_device(opt.device)
@@ -164,9 +163,11 @@ def detect(opt):
     txt_file_name = source.split('/')[-1].split('.')[0]
     txt_path = str(Path(out)) + '/' + txt_file_name + '.txt'
 
-    group_frame = get_object_frame("gt.txt")
+    group_frame = get_object_frame(gt_path)
     
     for frame_idx, (path, img, im0s, vid_cap) in enumerate(dataset):
+        print(frame_idx)
+
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
         img /= 255.0  # 0 - 255 to 0.0 - 1.0
@@ -181,6 +182,8 @@ def detect(opt):
         pred = non_max_suppression(
             pred, opt.conf_thres, opt.iou_thres, classes=opt.classes, agnostic=opt.agnostic_nms)
         t2 = time_synchronized()
+
+        print(pred)
 
         # Process detections
         for i, det in enumerate(pred):  # detections per image
@@ -215,7 +218,9 @@ def detect(opt):
 
                 xywhs = torch.Tensor(xywh_bboxs)
                 confss = torch.Tensor(confs)
-                
+
+                print(xywhs.shape, confss.shape)
+                print()
                 # pass detections to deepsort
                 outputs = deepsort.update(xywhs, confss, im0)
 

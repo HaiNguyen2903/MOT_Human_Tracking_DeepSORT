@@ -165,85 +165,224 @@ def detect(opt):
     txt_file_name = source.split('/')[-1].split('.')[0]
     txt_path = str(Path(out)) + '/' + txt_file_name + '.txt'
 
+    # save_path = 'inference/test_output/'
+    # txt_path = os.path.join(save_path, 'test_pred')
+
+
     group_frame = get_object_frame(gt_path)
-    
+
     '''
     =================================================================================
     ''' 
-    for frame_idx, (path, img, im0s, vid_cap) in enumerate(dataset):
-        img = torch.from_numpy(img).to(device)
-        img = img.half() if half else img.float()  # uint8 to fp16/32
-        img /= 255.0  # 0 - 255 to 0.0 - 1.0
-        if img.ndimension() == 3:
-            img = img.unsqueeze(0)
+    # # contain extracted frames
+    # frame_dir = ''
 
-        # Inference
-        t1 = time_synchronized()
-        pred = model(img, augment=opt.augment)[0]
+    # # contain list of txt pred file coresponding for each frame
+    # pred_dir = ''
+    
+    # for frame_idx, (path, img, im0s, vid_cap) in enumerate(dataset):
+    #     img = torch.from_numpy(img).to(device)
+    #     img = img.half() if half else img.float()  # uint8 to fp16/32
+    #     img /= 255.0  # 0 - 255 to 0.0 - 1.0
+    #     if img.ndimension() == 3:
+    #         img = img.unsqueeze(0)
 
-        embed(header='debug pred')
+    #     # Inference
+    #     t1 = time_synchronized()
+    #     pred = model(img, augment=opt.augment)[0]
 
-        # Apply NMS
+    #     embed(header='debug pred')
 
-        # Returns: list of detections, on (n,6) tensor per image [xyxy, conf, cls]
-        pred = non_max_suppression(
-            pred, opt.conf_thres, opt.iou_thres, classes=opt.classes, agnostic=opt.agnostic_nms)
-        t2 = time_synchronized()
+    #     # Apply NMS
 
-        embed(header='debug pred after nms')
+    #     # Returns: list of detections, on (n,6) tensor per image [xyxy, conf, cls]
+    #     pred = non_max_suppression(
+    #         pred, opt.conf_thres, opt.iou_thres, classes=opt.classes, agnostic=opt.agnostic_nms)
+    #     t2 = time_synchronized()
 
-        # Example: [tensor([[444.50000,  33.65625, 492.00000, 113.87500,   0.76025,  58.00000]], device='cuda:0')]
+    #     embed(header='debug pred after nms')
 
-        # img0 shape: 1080 x 1920 x 3
-        # s: 384x640
 
-        # Process detections
-        for i, det in enumerate(pred):  # detections per image
-            if webcam:  # batch_size >= 1
-                p, s, im0 = path[i], '%g: ' % i, im0s[i].copy()
-            else:
-                p, s, im0 = path, '', im0s
+        
+    #     # Example: [tensor([[444.50000,  33.65625, 492.00000, 113.87500,   0.76025,  58.00000]], device='cuda:0')]
 
-            s += '%gx%g ' % img.shape[2:]  # print string
+    #     # img0 shape: 1080 x 1920 x 3
+    #     # s: 384x640
 
-            # 'inference/output/NVR-CH01_S20210608-084648_E20210608-084709.mp4'
-            save_path = str(Path(out) / Path(p).name)
+    #     # Process detections
+    #     for i, det in enumerate(pred):  # detections per image
+
+    #         # det example: tensor([[444.50000,  33.65625, 492.00000, 113.87500,   0.76025,  58.00000]], device='cuda:0')
+    #         if webcam:  # batch_size >= 1
+    #             p, s, im0 = path[i], '%g: ' % i, im0s[i].copy()
+    #         else:
+    #             '''
+    #             p: path to vid
+    #             s: size (384 x 640)
+    #             im0: ndarray (1080 x 1920 x 3)
+    #             '''
+    #             p, s, im0 = path, '', im0s
+
+    #         s += '%gx%g ' % img.shape[2:]  # print string  '384x640'
+
+    #         # 'inference/output/NVR-CH01_S20210608-084648_E20210608-084709.mp4'
+    #         save_path = str(Path(out) / Path(p).name)
             
-            embed(header='debug det')
+    #         embed(header='debug det')
+
+    #         if det is not None and len(det):
+    #             # Rescale boxes from img_size to im0 size (from 384x640 to 1080x1920x3)
+    #             det[:, :4] = scale_coords(
+    #                 img.shape[2:], det[:, :4], im0.shape).round()
+
+    #             # Print results
+    #             for c in det[:, -1].unique():
+    #                 n = (det[:, -1] == c).sum()  # detections per class
+    #                 s += '%g %ss, ' % (n, names[int(c)])  # add to string
+
+    #             xywh_bboxs = []
+    #             confs = []
+
+    #             embed(header = 'debug scale box')
+    #             # Adapt detections to deep sort input format
+    #             for *xyxy, conf, cls in det:
+    #                 '''
+    #                 *xyxy: tensor(1334., device='cuda:0') tensor(65., device='cuda:0') tensor(1476., device='cuda:0') tensor(306., device='cuda:0')
+    #                 conf: tensor(0.76025, device='cuda:0')
+    #                 cls: tensor(58., device='cuda:0')
+    #                 '''
+    #                 # to deep sort format
+    #                 x_c, y_c, bbox_w, bbox_h = xyxy_to_xywh(*xyxy) # convert to x center, y center, w, h
+    #                 xywh_obj = [x_c, y_c, bbox_w, bbox_h]
+    #                 xywh_bboxs.append(xywh_obj)
+    #                 confs.append([conf.item()])
+
+    #             xywhs = torch.Tensor(xywh_bboxs)    # tensor([[1405.00000,  185.50000,  142.00000,  241.00000]]) (1 x 4)
+    #             confss = torch.Tensor(confs)        # tensor([[0.76025]]) (1 x 1)
+                
+    #             # pass detections to deepsort
+
+    #             # update tracker, return tensor of xy_xy + track id 
+    #             outputs = deepsort.update(xywhs, confss, im0)
+
+    #             embed(header='debug input for deepsort')
+
+    #             # draw boxes for visualization
+    #             if len(outputs) > 0 and opt.mode == "predict":
+    #                 bbox_xyxy = outputs[:, :4]
+    #                 identities = outputs[:, -1]
+    #                 draw_boxes(im0, bbox_xyxy, identities)
+    #                 # to MOT format
+    #                 tlwh_bboxs = xyxy_to_tlwh(bbox_xyxy)
+
+    #                 # Write MOT compliant results to file
+    #                 if save_txt:
+    #                     for j, (tlwh_bbox, output) in enumerate(zip(tlwh_bboxs, outputs)):
+    #                         bbox_top = tlwh_bbox[0]
+    #                         bbox_left = tlwh_bbox[1]
+    #                         bbox_w = tlwh_bbox[2]
+    #                         bbox_h = tlwh_bbox[3]
+    #                         identity = output[-1]
+    #                         with open(txt_path, 'a') as f:
+    #                             f.write(('%g ' * 10 + '\n') % (frame_idx, identity, bbox_top,
+    #                                                         bbox_left, bbox_w, bbox_h, -1, -1, -1, -1))  # label format
+    #             if(opt.mode == "gt"):
+    #                 persons_inf = group_frame[frame_idx+1]
+    #                 bbox_gt_xyxy = list(map(lambda x: x.xywh_to_xyxy(), persons_inf))
+    #                 identities_gt = list(map(lambda x: x.track_id, persons_inf))
+    #                 draw_boxes(im0, bbox_gt_xyxy, identities_gt)
+
+    #         else:
+    #             deepsort.increment_ages()
+
+    #         # Print time (inference + NMS)
+    #         print('%sDone. (%.3fs)' % (s, t2 - t1))
+
+    #         # Stream results
+    #         if show_vid:
+    #             cv2.imshow(p, im0)
+    #             if cv2.waitKey(1) == ord('q'):  # q to quit
+    #                 raise StopIteration
+
+    #         # Save results (image with detections)
+    #         if save_vid:
+    #             if vid_path != save_path:  # new video
+    #                 vid_path = save_path
+    #                 if isinstance(vid_writer, cv2.VideoWriter):
+    #                     vid_writer.release()  # release previous video writer
+    #                 if vid_cap:  # video
+    #                     fps = vid_cap.get(cv2.CAP_PROP_FPS)
+    #                     w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    #                     h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    #                 else:  # stream
+    #                     fps, w, h = 30, im0.shape[1], im0.shape[0]
+    #                     save_path += '.mp4'
+
+    #                 vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+    #             vid_writer.write(im0)
+
+    
+
+    # contain extracted frames
+    frame_dir = opt.frame_dir
+
+    # contain list of txt pred file coresponding for each frame
+    pred_dir = opt.det_pred_dir
+
+    print(frame_dir)
+    print(pred_dir)
+
+
+    # for each frame
+    for file in sorted(os.listdir(pred_dir)):
+        frame_idx = int(file[6:12])
+
+        im0 = cv2.imread(os.path.join(frame_dir, file[:-3] + 'jpg'))
+        
+        f = open(os.path.join(pred_dir, file), 'r')
+        lines = f.readlines()
+
+        xywh_bboxs = []
+        confs = []
+
+        # for each det in the current images
+        for line in lines:
+            line = line.strip()
+
+            # class conf left top right bottom 
+            det = (line.split(' '))
+
+            det[0] = 0
+            for i in range(1, 6):
+                det[i] = float(det[i])
+
+            det = torch.Tensor([det])
+            det.to(device)
 
             if det is not None and len(det):
-                # Rescale boxes from img_size to im0 size (from 384x640 to 1080x1920x3)
-                det[:, :4] = scale_coords(
-                    img.shape[2:], det[:, :4], im0.shape).round()
-
-                # Print results
-                for c in det[:, -1].unique():
-                    n = (det[:, -1] == c).sum()  # detections per class
-                    s += '%g %ss, ' % (n, names[int(c)])  # add to string
-
-                xywh_bboxs = []
-                confs = []
-
-                embed(header = 'debug scale box')
-                # Adapt detections to deep sort input format
-                for *xyxy, conf, cls in det:
+                for cls, conf, *xyxy in det:
+                    '''
+                    *xyxy: tensor(1334., device='cuda:0') tensor(65., device='cuda:0') tensor(1476., device='cuda:0') tensor(306., device='cuda:0')
+                    conf: tensor(0.76025, device='cuda:0')
+                    cls: tensor(58., device='cuda:0')
+                    '''
                     # to deep sort format
                     x_c, y_c, bbox_w, bbox_h = xyxy_to_xywh(*xyxy) # convert to x center, y center, w, h
                     xywh_obj = [x_c, y_c, bbox_w, bbox_h]
                     xywh_bboxs.append(xywh_obj)
                     confs.append([conf.item()])
 
-                xywhs = torch.Tensor(xywh_bboxs)
-                confss = torch.Tensor(confs)
-                
+                xywhs = torch.Tensor(xywh_bboxs)    # tensor([[1405.00000,  185.50000,  142.00000,  241.00000]]) (1 x 4)
+                confss = torch.Tensor(confs)        # tensor([[0.76025]]) (1 x 1)
+        
                 # pass detections to deepsort
 
                 # update tracker, return tensor of xy_xy + track id 
                 outputs = deepsort.update(xywhs, confss, im0)
 
-                embed(header='debug input for deepsort')
 
-                # draw boxes for visualization
+                # embed()
+
                 if len(outputs) > 0 and opt.mode == "predict":
                     bbox_xyxy = outputs[:, :4]
                     identities = outputs[:, -1]
@@ -251,6 +390,7 @@ def detect(opt):
                     # to MOT format
                     tlwh_bboxs = xyxy_to_tlwh(bbox_xyxy)
 
+                    # embed()
                     # Write MOT compliant results to file
                     if save_txt:
                         for j, (tlwh_bbox, output) in enumerate(zip(tlwh_bboxs, outputs)):
@@ -260,8 +400,11 @@ def detect(opt):
                             bbox_h = tlwh_bbox[3]
                             identity = output[-1]
                             with open(txt_path, 'a') as f:
-                                f.write(('%g ' * 10 + '\n') % (frame_idx, identity, bbox_top,
-                                                            bbox_left, bbox_w, bbox_h, -1, -1, -1, -1))  # label format
+                                # f.write(('%g ' * 10 + '\n') % (frame_idx,  identity, bbox_top,
+                                #                                     bbox_left, bbox_w, bbox_h, -1, -1, -1, -1))  # label format
+                                f.write('{},{},{},{},{},{},-1,-1,-1,-1\n'.format(frame_idx, identity, bbox_top,
+                                                                                    bbox_left, bbox_w, bbox_h))
+                
                 if(opt.mode == "gt"):
                     persons_inf = group_frame[frame_idx+1]
                     bbox_gt_xyxy = list(map(lambda x: x.xywh_to_xyxy(), persons_inf))
@@ -271,39 +414,149 @@ def detect(opt):
             else:
                 deepsort.increment_ages()
 
-            # Print time (inference + NMS)
-            print('%sDone. (%.3fs)' % (s, t2 - t1))
-
-            # Stream results
-            if show_vid:
-                cv2.imshow(p, im0)
-                if cv2.waitKey(1) == ord('q'):  # q to quit
-                    raise StopIteration
-
-            # Save results (image with detections)
-            if save_vid:
-                if vid_path != save_path:  # new video
-                    vid_path = save_path
-                    if isinstance(vid_writer, cv2.VideoWriter):
-                        vid_writer.release()  # release previous video writer
-                    if vid_cap:  # video
-                        fps = vid_cap.get(cv2.CAP_PROP_FPS)
-                        w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                        h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                    else:  # stream
-                        fps, w, h = 30, im0.shape[1], im0.shape[0]
-                        save_path += '.mp4'
-
-                    vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
-                vid_writer.write(im0)
+        
 
     
+    # for frame_idx, (path, img, im0s, vid_cap) in enumerate(dataset):
+    #     img = torch.from_numpy(img).to(device)
+    #     img = img.half() if half else img.float()  # uint8 to fp16/32
+    #     img /= 255.0  # 0 - 255 to 0.0 - 1.0
+    #     if img.ndimension() == 3:
+    #         img = img.unsqueeze(0)
 
-    # contain extracted frames
-    frame_dir = ''
+    #     # Inference
+    #     t1 = time_synchronized()
+    #     pred = model(img, augment=opt.augment)[0]
 
-    # contain list of txt pred file coresponding for each frame
-    pred_dir = ''
+    #     embed(header='debug pred')
+
+    #     # Apply NMS
+
+    #     # Returns: list of detections, on (n,6) tensor per image [xyxy, conf, cls]
+    #     pred = non_max_suppression(
+    #         pred, opt.conf_thres, opt.iou_thres, classes=opt.classes, agnostic=opt.agnostic_nms)
+    #     t2 = time_synchronized()
+
+    #     embed(header='debug pred after nms')
+
+
+        
+    #     # Example pred after nms: [tensor([[444.50000,  33.65625, 492.00000, 113.87500,   0.76025,  58.00000]], device='cuda:0')]
+
+    #     # img0 shape: 1080 x 1920 x 3
+    #     # s: 384x640
+
+    #     # Process detections
+    #     for i, det in enumerate(pred):  # detections per image
+
+    #         # det example: tensor([[444.50000,  33.65625, 492.00000, 113.87500,   0.76025,  58.00000]], device='cuda:0')
+    #         if webcam:  # batch_size >= 1
+    #             p, s, im0 = path[i], '%g: ' % i, im0s[i].copy()
+    #         else:
+    #             '''
+    #             p: path to vid
+    #             s: size (384 x 640)
+    #             im0: ndarray (1080 x 1920 x 3)
+    #             '''
+    #             p, s, im0 = path, '', im0s
+
+    #         s += '%gx%g ' % img.shape[2:]  # print string  '384x640'
+
+    #         # 'inference/output/NVR-CH01_S20210608-084648_E20210608-084709.mp4'
+    #         save_path = str(Path(out) / Path(p).name)
+            
+    #         embed(header='debug det')
+
+    #         if det is not None and len(det):
+    #             # Rescale boxes from img_size to im0 size (from 384x640 to 1080x1920x3)
+    #             det[:, :4] = scale_coords(
+    #                 img.shape[2:], det[:, :4], im0.shape).round()
+
+    #             # Print results
+    #             for c in det[:, -1].unique():
+    #                 n = (det[:, -1] == c).sum()  # detections per class
+    #                 s += '%g %ss, ' % (n, names[int(c)])  # add to string
+
+    #             xywh_bboxs = []
+    #             confs = []
+
+    #             embed(header = 'debug scale box')
+    #             # Adapt detections to deep sort input format
+    #             for *xyxy, conf, cls in det:
+    #                 '''
+    #                 *xyxy: tensor(1334., device='cuda:0') tensor(65., device='cuda:0') tensor(1476., device='cuda:0') tensor(306., device='cuda:0')
+    #                 conf: tensor(0.76025, device='cuda:0')
+    #                 cls: tensor(58., device='cuda:0')
+    #                 '''
+    #                 # to deep sort format
+    #                 x_c, y_c, bbox_w, bbox_h = xyxy_to_xywh(*xyxy) # convert to x center, y center, w, h
+    #                 xywh_obj = [x_c, y_c, bbox_w, bbox_h]
+    #                 xywh_bboxs.append(xywh_obj)
+    #                 confs.append([conf.item()])
+
+    #             xywhs = torch.Tensor(xywh_bboxs)    # tensor([[1405.00000,  185.50000,  142.00000,  241.00000]]) (1 x 4)
+    #             confss = torch.Tensor(confs)        # tensor([[0.76025]]) (1 x 1)
+                
+    #             # pass detections to deepsort
+
+    #             # update tracker, return tensor of xy_xy + track id 
+    #             outputs = deepsort.update(xywhs, confss, im0)
+
+    #             embed(header='debug input for deepsort')
+
+    #             # draw boxes for visualization
+    #             if len(outputs) > 0 and opt.mode == "predict":
+    #                 bbox_xyxy = outputs[:, :4]
+    #                 identities = outputs[:, -1]
+    #                 draw_boxes(im0, bbox_xyxy, identities)
+    #                 # to MOT format
+    #                 tlwh_bboxs = xyxy_to_tlwh(bbox_xyxy)
+
+    #                 # Write MOT compliant results to file
+    #                 if save_txt:
+    #                     for j, (tlwh_bbox, output) in enumerate(zip(tlwh_bboxs, outputs)):
+    #                         bbox_top = tlwh_bbox[0]
+    #                         bbox_left = tlwh_bbox[1]
+    #                         bbox_w = tlwh_bbox[2]
+    #                         bbox_h = tlwh_bbox[3]
+    #                         identity = output[-1]
+    #                         with open(txt_path, 'a') as f:
+    #                             f.write(('%g ' * 10 + '\n') % (frame_idx, identity, bbox_top,
+    #                                                         bbox_left, bbox_w, bbox_h, -1, -1, -1, -1))  # label format
+    #             if(opt.mode == "gt"):
+    #                 persons_inf = group_frame[frame_idx+1]
+    #                 bbox_gt_xyxy = list(map(lambda x: x.xywh_to_xyxy(), persons_inf))
+    #                 identities_gt = list(map(lambda x: x.track_id, persons_inf))
+    #                 draw_boxes(im0, bbox_gt_xyxy, identities_gt)
+
+    #         else:
+    #             deepsort.increment_ages()
+
+    #         # Print time (inference + NMS)
+    #         print('%sDone. (%.3fs)' % (s, t2 - t1))
+
+    #         # Stream results
+    #         if show_vid:
+    #             cv2.imshow(p, im0)
+    #             if cv2.waitKey(1) == ord('q'):  # q to quit
+    #                 raise StopIteration
+
+    #         # Save results (image with detections)
+    #         if save_vid:
+    #             if vid_path != save_path:  # new video
+    #                 vid_path = save_path
+    #                 if isinstance(vid_writer, cv2.VideoWriter):
+    #                     vid_writer.release()  # release previous video writer
+    #                 if vid_cap:  # video
+    #                     fps = vid_cap.get(cv2.CAP_PROP_FPS)
+    #                     w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    #                     h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    #                 else:  # stream
+    #                     fps, w, h = 30, im0.shape[1], im0.shape[0]
+    #                     save_path += '.mp4'
+
+    #                 vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+    #             vid_writer.write(im0)
 
 
 
@@ -341,6 +594,9 @@ if __name__ == '__main__':
     parser.add_argument('--evaluate', action='store_true', help='augmented inference')
     parser.add_argument("--config_deepsort", type=str, default="deep_sort_pytorch/configs/deep_sort.yaml")
     parser.add_argument("--mode", type=str, default="predict", help='options: predict|gt')
+
+    parser.add_argument("--frame_dir", type=str, default = '/data.local/hangd/data_vtx/frames_data/test/NVR-CH01_S20210607-102303_E20210607-102433')
+    parser.add_argument("--det_pred_dir", type=str, default = '/data.local/all/hainp/yolov5_deep_sort/deep_sort_copy/track_dataset/NVR-CH01_S20210607-102303_E20210607-102433/ensemble')
     args = parser.parse_args()
     args.img_size = check_img_size(args.img_size)
                         

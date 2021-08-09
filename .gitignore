@@ -12,3 +12,4 @@ deep_sort_pytorch/deep_sort/deep/checkpoint
 deep_sort_pytorch/deep_sort/deep/predicts
 track_dataset
 generate_data/__pycache__/
+inference/
