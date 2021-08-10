@@ -208,8 +208,10 @@ def visualize_rank_k(scores, output_dir, width=128, height=256, topk=10):
     
         imname = os.path.basename(query_paths[i])[:-4]
         cv2.imwrite(os.path.join(output_dir, str(pid), imname + '.jpg'), grid_img)
-        print('write {}'.format(imname))
+        print('Writing {}.jpg'.format(imname))
 
+    print('Successfully.')
+    
 if __name__ == '__main__':
     calculate_rank_1(scores)
     calculate_precision_k(scores, args.p_k)
