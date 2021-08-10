@@ -125,4 +125,3 @@ if __name__ == '__main__':
     calculate_rank_1(scores)
     calculate_precision_k(scores, args.p_k)
     calculate_mAP_n(scores, args.map_n)
-
