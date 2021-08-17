@@ -321,8 +321,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # parser.add_argument('--yolo_weights', type=str, default='/data.local/all/hainp/yolov5_deep_sort/deep_sort_copy/tools/artifacts/run_3gqwg2vr_model:v0/best.pt', help='model.pt path')
     
-    parser.add_argument('--yolo_weights', type=str, default='/data.local/all/hainp/yolov5_deep_sort/deep_sort_copy/yolov5/runs/train/exp/weights/best.pt', help='model.pt  path')
-    # parser.add_argument('--yolo_weights', type=str, default='yolov5/checkpoints/yolov5s.pt', help='model.pt path')
+    # parser.add_argument('--yolo_weights', type=str, default='/data.local/all/hainp/yolov5_deep_sort/deep_sort_copy/yolov5/runs/train/exp/weights/best.pt', help='model.pt  path')
+    parser.add_argument('--yolo_weights', type=str, default='yolov5/checkpoints/yolov5s.pt', help='model.pt path')
     
     parser.add_argument('--deep_sort_weights', type=str, default='deep_sort_pytorch/deep_sort/deep/checkpoint/ckpt.t7', help='ckpt.t7 path')
     # file/folder, 0 for webcam
