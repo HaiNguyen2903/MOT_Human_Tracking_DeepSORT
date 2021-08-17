@@ -54,8 +54,8 @@ def make_layers(c_in, c_out, repeat_times, is_downsample=False):
 Finetuned model
 '''
 class Net(nn.Module):
-    # was 351 class (need fix to 751 to use ckpt.t7)
-    def __init__(self, num_classes=868, reid=False):
+    # was 351 class (need fix to 751 to use ckpt.t7, 868 for ckpt trained on vtx data)
+    def __init__(self, num_classes=751, reid=False):
         super(Net, self).__init__()
         # 3 128 64
         self.conv = nn.Sequential(

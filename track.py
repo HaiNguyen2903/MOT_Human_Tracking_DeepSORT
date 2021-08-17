@@ -225,7 +225,7 @@ def detect(opt):
         pred.to(device)
         pred = [pred]
         
-        print('Predicting frame {}'.format(frame_idx))
+        # print('Predicting frame {}'.format(frame_idx))
 
         for i, det in enumerate(pred):
             if det is not None and len(det):
@@ -268,6 +268,8 @@ def detect(opt):
                             bbox_w = tlwh_bbox[2]
                             bbox_h = tlwh_bbox[3]
                             identity = output[-1]
+                            print('Writing frame {}'.format(frame_idx))
+                            # print(frame_idx, identity, bbox_top, bbox_left, bbox_w, bbox_h)
                             with open(txt_path, 'a') as f:
                                 # f.write(('%g ' * 10 + '\n') % (frame_idx,  identity, bbox_top,
                                 #                                     bbox_left, bbox_w, bbox_h, -1, -1, -1, -1))  # label format
@@ -299,7 +301,7 @@ def detect(opt):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--yolo_weights', type=str, default='yolov5/checkpoints/yolov5s.pt', help='model.pt path')
-    parser.add_argument('--deep_sort_weights', type=str, default='deep_sort_pytorch/deep_sort/deep/checkpoint/best_ckpt.t7', help='ckpt.t7 path')
+    parser.add_argument('--deep_sort_weights', type=str, default='deep_sort_pytorch/deep_sort/deep/checkpoint/ckpt.t7', help='ckpt.t7 path')
     # file/folder, 0 for webcam
     parser.add_argument('--source', type=str, default='0', help='source')
     parser.add_argument('--output', type=str, default='/data.local/all/hainp/yolov5_deep_sort/deep_sort_copy/inference', help='output folder')  # output folder
@@ -322,6 +324,11 @@ if __name__ == '__main__':
     parser.add_argument("--frame_dir", type=str, default = '/data.local/hangd/data_vtx/frames_data/test/NVR-CH01_S20210607-102303_E20210607-102433')
     parser.add_argument("--det_pred_dir", type=str, default = '/data.local/all/hainp/yolov5_deep_sort/deep_sort_copy/track_dataset/NVR-CH01_S20210607-102303_E20210607-102433/ensemble')
     parser.add_argument("--gt_path", type = str, default = '/data.local/all/hainp/yolov5_deep_sort/deep_sort_copy/track_dataset/gt.txt')
+    
+    # parser.add_argument("--frame_dir", type=str, default = '/data.local/hangd/data_vtx/frames_data/test/NVR-CH01_S20210607-095126_E20210607-102303')
+    # parser.add_argument("--det_pred_dir", type=str, default = '/data.local/hangd/data_vtx/mot_evalation_data/vtx_test/NVR-CH01_S20210607-095126_E20210607-102303/ensemble')
+    # parser.add_argument("--gt_path", type = str, default = '/data.local/hangd/data_vtx/mot_evalation_data/vtx_test/NVR-CH01_S20210607-095126_E20210607-102303/gt/gt.txt')
+
     args = parser.parse_args()
     args.img_size = check_img_size(args.img_size)
                         

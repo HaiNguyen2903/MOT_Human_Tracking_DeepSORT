@@ -1,8 +1,8 @@
-# 751 for ckpt.t7
+# 751 for ckpt.t7, 868 for model trained on vtx
 
 DEEPSORT:
-  REID_CKPT: "deep_sort_pytorch/deep_sort/deep/checkpoint/best_ckpt.t7"
-  REID_CLASSES_DIM: 868
+  REID_CKPT: "deep_sort_pytorch/deep_sort/deep/checkpoint/ckpt.t7"
+  REID_CLASSES_DIM: 751
   MAX_DIST: 0.2
   MIN_CONFIDENCE: 0.3
   NMS_MAX_OVERLAP: 0.5

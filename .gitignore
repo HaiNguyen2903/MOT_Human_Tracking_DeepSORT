@@ -13,3 +13,7 @@ deep_sort_pytorch/deep_sort/deep/predicts
 track_dataset
 generate_data/__pycache__/
 inference/
+wandb/
+yolov5/wandb
+tools/wandb
+tools/artifacts

@@ -19,6 +19,7 @@ import cv2
 import torch
 import torch.backends.cudnn as cudnn
 from generate_data.gt_utils import get_object_frame
+from IPython import embed
 
 palette = (2 ** 11 - 1, 2 ** 15 - 1, 2 ** 20 - 1)
 gt_path = '/data.local/all/hainp/yolov5_deep_sort/deep_sort_copy/track_dataset/gt.txt'
@@ -106,28 +107,30 @@ def detect(opt):
     cfg.merge_from_file(opt.config_deepsort)
     attempt_download(deep_sort_weights, repo='mikel-brostrom/Yolov5_DeepSort_Pytorch')
 
-    # deepsort = DeepSort(cfg.DEEPSORT.REID_CKPT,
-    #                     max_dist=cfg.DEEPSORT.MAX_DIST, min_confidence=cfg.DEEPSORT.MIN_CONFIDENCE,
-    #                     nms_max_overlap=cfg.DEEPSORT.NMS_MAX_OVERLAP, max_iou_distance=cfg.DEEPSORT.MAX_IOU_DISTANCE,
-    #                     max_age=cfg.DEEPSORT.MAX_AGE, n_init=cfg.DEEPSORT.N_INIT, nn_budget=cfg.DEEPSORT.NN_BUDGET,
-    #                     use_cuda=True, reid_classes=cfg.DEEPSORT.REID_CLASSES_DIM)
-
     deepsort = DeepSort(cfg.DEEPSORT.REID_CKPT,
                         max_dist=cfg.DEEPSORT.MAX_DIST, min_confidence=cfg.DEEPSORT.MIN_CONFIDENCE,
                         nms_max_overlap=cfg.DEEPSORT.NMS_MAX_OVERLAP, max_iou_distance=cfg.DEEPSORT.MAX_IOU_DISTANCE,
                         max_age=cfg.DEEPSORT.MAX_AGE, n_init=cfg.DEEPSORT.N_INIT, nn_budget=cfg.DEEPSORT.NN_BUDGET,
-                        use_cuda=True)
+                        use_cuda=True, reid_classes=cfg.DEEPSORT.REID_CLASSES_DIM)
+
+    # deepsort = DeepSort(cfg.DEEPSORT.REID_CKPT,
+    #                     max_dist=cfg.DEEPSORT.MAX_DIST, min_confidence=cfg.DEEPSORT.MIN_CONFIDENCE,
+    #                     nms_max_overlap=cfg.DEEPSORT.NMS_MAX_OVERLAP, max_iou_distance=cfg.DEEPSORT.MAX_IOU_DISTANCE,
+    #                     max_age=cfg.DEEPSORT.MAX_AGE, n_init=cfg.DEEPSORT.N_INIT, nn_budget=cfg.DEEPSORT.NN_BUDGET,
+    #                     use_cuda=True)
 
     # Initialize
     device = select_device(opt.device)
 
     # The MOT16 evaluation runs multiple inference streams in parallel, each one writing to
     # its own .txt file. Hence, in that case, the output folder is not restored
-    if not evaluate:
-        if os.path.exists(out):
-            pass
-            shutil.rmtree(out)  # delete output folder
-        os.makedirs(out)  # make new output folder
+
+    # if not evaluate:
+    #     if os.path.exists(out):
+    #         pass
+    #         shutil.rmtree(out)  # delete output folder
+    #     os.makedirs(out)  # make new output folder
+
     half = device.type != 'cpu'  # half precision only supported on CUDA
 
     # Load model
@@ -158,7 +161,14 @@ def detect(opt):
         model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
     t0 = time.time()
 
-    save_path = str(Path(out))
+    # save_path = str(Path(out))
+    save_folder = opt.output
+    if not os.path.isdir(save_folder):
+        os.mkdir(save_folder)
+
+    
+    # save_path = opt.output
+
     # extract what is in between the last '/' and last '.'
     txt_file_name = source.split('/')[-1].split('.')[0]
     txt_path = str(Path(out)) + '/' + txt_file_name + '.txt'
@@ -166,7 +176,8 @@ def detect(opt):
     group_frame = get_object_frame(gt_path)
     
     for frame_idx, (path, img, im0s, vid_cap) in enumerate(dataset):
-        print(frame_idx)
+        # print(frame_idx)
+        # embed(header='debug dataset')
 
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
@@ -183,7 +194,7 @@ def detect(opt):
             pred, opt.conf_thres, opt.iou_thres, classes=opt.classes, agnostic=opt.agnostic_nms)
         t2 = time_synchronized()
 
-        print('PRED:', pred)
+        # print('PRED:', pred)
 
         # Process detections
         for i, det in enumerate(pred):  # detections per image
@@ -193,9 +204,14 @@ def detect(opt):
                 p, s, im0 = path, '', im0s
 
             s += '%gx%g ' % img.shape[2:]  # print string
-            save_path = str(Path(out) / Path(p).name)
 
-            print('det:', det)
+            # save_path = str(Path(out) / Path(p).name)
+            # save_path = opt.output + '/' + 'test'
+
+            save_path = opt.output
+            vid_name = 'demo'
+
+            # print('det:', det)
             if det is not None and len(det):
                 # Rescale boxes from img_size to im0 size
                 det[:, :4] = scale_coords(
@@ -220,8 +236,8 @@ def detect(opt):
                 xywhs = torch.Tensor(xywh_bboxs)
                 confss = torch.Tensor(confs)
 
-                print(xywhs.shape, confss.shape)
-                print()
+                # print(xywhs.shape, confss.shape)
+                # print()
                 # pass detections to deepsort
                 outputs = deepsort.update(xywhs, confss, im0)
 
@@ -264,6 +280,7 @@ def detect(opt):
 
             # Save results (image with detections)
             if save_vid:
+                # embed(header='debug save video')
                 if vid_path != save_path:  # new video
                     vid_path = save_path
                     if isinstance(vid_writer, cv2.VideoWriter):
@@ -272,12 +289,25 @@ def detect(opt):
                         fps = vid_cap.get(cv2.CAP_PROP_FPS)
                         w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                         h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+                        save_path += '.mp4'
+                        # save_vid_path = os.path.join(save_path, 'demo.mp4')
+                        # print(save_vid_path)
+                        # exit()
                     else:  # stream
                         fps, w, h = 30, im0.shape[1], im0.shape[0]
                         save_path += '.mp4'
+                        save_vid_path = os.path.join(save_path, vid_name + '.mp4')
 
+                    # vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                     vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+                # embed(header='before write')
                 vid_writer.write(im0)
+
+
+    # vid_writer.release()
+    # # Closes all the frames
+    # cv2.destroyAllWindows()
 
     if save_txt or save_vid:
         print('Results saved to %s' % os.getcwd() + os.sep + out)
@@ -289,11 +319,16 @@ def detect(opt):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--yolo_weights', type=str, default='yolov5/checkpoints/yolov5s.pt', help='model.pt path')
+    # parser.add_argument('--yolo_weights', type=str, default='/data.local/all/hainp/yolov5_deep_sort/deep_sort_copy/tools/artifacts/run_3gqwg2vr_model:v0/best.pt', help='model.pt path')
+    
+    parser.add_argument('--yolo_weights', type=str, default='/data.local/all/hainp/yolov5_deep_sort/deep_sort_copy/yolov5/runs/train/exp/weights/best.pt', help='model.pt  path')
+    # parser.add_argument('--yolo_weights', type=str, default='yolov5/checkpoints/yolov5s.pt', help='model.pt path')
+    
     parser.add_argument('--deep_sort_weights', type=str, default='deep_sort_pytorch/deep_sort/deep/checkpoint/ckpt.t7', help='ckpt.t7 path')
     # file/folder, 0 for webcam
-    parser.add_argument('--source', type=str, default='0', help='source')
-    parser.add_argument('--output', type=str, default='inference/output', help='output folder')  # output folder
+    # parser.add_argument('--source', type=str, default='0', help='source')
+    parser.add_argument('--source', type=str, default='/data.local/hangd/data_vtx/testing/NVR-CH07_S20210609-084936_E20210609-085153.mp4', help='source')
+    parser.add_argument('--output', type=str, default='/data.local/all/hainp/yolov5_deep_sort/deep_sort_copy/inference/demos', help='output folder')  # output folder
     parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.4, help='object confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.5, help='IOU threshold for NMS')
