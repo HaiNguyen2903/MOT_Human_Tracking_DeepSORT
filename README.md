@@ -1,62 +1,141 @@
 # Additional running tutorial
 
-## Detection Module
-
-### Generate VTX data for detection module
-
-In `generate_data/combine_train_data.py`, replace `root_frames_dir` and `root_labels_dir` by folder with format:
+## Data Generating
+For faster and easier generating process, we first design a `MAIN_DATA_TREE` like below:
 
 ```bash
-root
-| 
-|___ VID_NAME_1
-|       |___ frame_xxxxxx.jpg
-|       |___ ...
-|___ VID_NAME_2
-        |___ frame_xxxxxx.jpg
-        |___ ...
+ROOT
+|
+|___data_version1
+|	|
+|	|__TRAIN_DATASET
+|       |       |
+|       |       |__video_name_1.mp4
+|       |       |__video_name_1
+|       |       |       |
+|       |       |       |__gt
+|       |       |           |__gt.txt
+|       |       |           |__labels.txt
+|       |       |
+|       |       |
+|       |       |__video_name_2.mp4
+|       |       |__video_name_2
+|       |               |
+|       |               |__gt
+|       |                   |__gt.txt
+|       |                   |__labels.txt
+|       |
+|	|
+|	|__detection_dataset
+|	|		|
+|       |               |___ images
+|       |               |       |___ train
+|       |               |       |       |___ frame_xxxxxx.jpg
+|       |               |       |       |___ ...
+|       |               |       |___ val
+|       |               |               |___ frame_xxxxxx.jpg
+|       |               |               |___ ...       
+|       |               |        
+|       |               |___ labels
+|       |                       |___ train
+|       |                       |       |___ frame_xxxxxx.txt
+|       |                       |       |___ ...
+|       |                       |___ val
+|       |                               |___ frame_xxxxxx.txt
+|       |                               |___ ...  
+|	|
+|	|__reid_dataset
+|			|
+|			|__query
+|			|    |
+|			|    |__id_1
+|                       |    |    |__frame_xxxxxx.jpg
+|			|    |
+|			|    |__id_2
+|                       |         |__frame_xxxxxx.jpg
+|			|
+|			|__gallery
+|			|    |
+|			|    |__id_1
+|                       |    |    |__frame_xxxxxx.jpg
+|                       |    |    |__...
+|			|    |
+|			|    |__id_2
+|                       |         |__frame_xxxxxx.jpg
+|                       |         |__...
+|			|
+|			|__train
+|			     |
+|			     |__id_1
+|                            |    |__frame_xxxxxx.jpg
+|                            |    |__...
+|			     |
+|			     |__id_2
+|                                 |__frame_xxxxxx.jpg
+|                                 |__...
+|
+|___data_version_n
+|
+|
+|___combine_dataset
+	 |
+         |__TRAIN_DATASET
+	 |
+	 |__detection_dataset
+	 |
+         |__reid_dataset	
+
+```
+Where each `data_version` folder refer to a sub dataset. In each `data_version` folder, there are `TRAIN_DATASET` refer to general data tree, `detection_dataset` is formatted follow YOLOV5 input format, and `reid_dataset` follow Market1501 format.
+
+There are also `combine_dataset`, which includes mix data of all previous versions.
+
+Each data version will be updated into the designed tree as above.
+
+### Generate Detection Data
+Will need first prepare a frame folder and labels folder as below:
+
+```bash
+frames_folder_root
+        | 
+        |___ video_name_1
+        |       |___ frame_xxxxxx.jpg
+        |       |___ ...
+        |___ video_name_2
+                |___ frame_xxxxxx.jpg
+                |___ ...
 ```
 
 ```bash
-root
-| 
-|___ VID_NAME_1
-|       |___ frame_xxxxxx.txt
-|       |___ ...
-|___ VID_NAME_2
-        |___ frame_xxxxxx.txt
-        |___ ...
-```
-
-Where `root_labels_dir` file is followed by `YOLO` labels format.
-
-In **generate_data** folder, run:
-
-```bash
-sh create_data_tree.sh
-```
-
-Data format after generated:
-```bash
-root
-| 
-|___ images
-|       |___ train
-|       |       |___ frame_xxxxxx.jpg
-|       |       |___ ...
-|       |___ val
-|               |___ frame_xxxxxx.jpg
-|               |___ ...       
-|        
-|___ labels
-        |___ train
+labels_folder_root
+        | 
+        |___ video_name_1
         |       |___ frame_xxxxxx.txt
         |       |___ ...
-        |___ val
+        |___ video_name_2
                 |___ frame_xxxxxx.txt
-                |___ ...      
+                |___ ...
+```
+Where each video labels folder is in YOLO label format.
+
+We then symlink from these folder to the `MAIN_DATA_TREE` for saving storage and generating time.
+
+```bash
+cd generate_data
 ```
 
+In `combine_train_detection_dataset.py`, declare `root_frames_dir` and `root_labels_dir` as path to these 2 above folder. Declare `combine_frames_dir` and `combine_labels_dir` as path to `detection_dataset` folder in `MAIN_DATA_TREE`. Run:
+
+```bash 
+python combine_train_detection_dataset.py
+```
+
+
+
+### Generate ReID Data 
+Follow tutorial from this [repo](https://github.com/LeDuySon/ALL_SCRIPTS)
+
+## Detection Module
 
 ### Training Custom Data
 **Follow** [Training Custom Data](https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data)
