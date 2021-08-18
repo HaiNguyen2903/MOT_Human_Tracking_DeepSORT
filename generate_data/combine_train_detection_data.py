@@ -90,7 +90,7 @@ def combine_symlink(root_frames_dir, root_labels_dir, combine_frames_dir, combin
 
             try:
                 os.symlink(os.path.join(frames_src_dir, frame), os.path.join(frames_dest_dir, 'frame_{:06d}.jpg'.format(id)))
-                os.symlink(os.path.join(labels_src_dir, frame[:-3] + 'txt'), os.path.join(labels_dest_dir, 'frame_{:06d}.jpg'.format(id)))
+                os.symlink(os.path.join(labels_src_dir, frame[:-3] + 'txt'), os.path.join(labels_dest_dir, 'frame_{:06d}.txt'.format(id)))
                 print('Generate frame {} for train video number {}'.format(id, vid_idx))
             except:
                 print('Already generated frame {} for test video number {}'.format(id, vid_idx))
@@ -127,7 +127,7 @@ def combine_symlink(root_frames_dir, root_labels_dir, combine_frames_dir, combin
             id = int(frame[6:12]) + current_frame
             try:
                 os.symlink(os.path.join(frames_src_dir, frame), os.path.join(frames_dest_dir, 'frame_{:06d}.jpg'.format(id)))
-                os.symlink(os.path.join(labels_src_dir, frame[:-3] + 'txt'), os.path.join(labels_dest_dir, 'frame_{:06d}.jpg'.format(id)))
+                os.symlink(os.path.join(labels_src_dir, frame[:-3] + 'txt'), os.path.join(labels_dest_dir, 'frame_{:06d}.txt'.format(id)))
                 print('Generate frame {} for test video number {}'.format(id, vid_idx))
             except:
                 print('Already generated frame {} for test video number {}'.format(id, vid_idx))
