@@ -14,6 +14,5 @@ track_dataset
 generate_data/__pycache__/
 inference/
 wandb/
-yolov5/wandb
 tools/wandb
 tools/artifacts
