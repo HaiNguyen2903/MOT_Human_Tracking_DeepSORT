@@ -147,10 +147,12 @@ Follow tutorial from this [repo](https://github.com/LeDuySon/ALL_SCRIPTS)
 2. `config yaml` file should be placed in `yolov5/data`.
 3. Training with `crowdhuman_yolov5 checkpoint` need to set `Optimizer: ...` as `None` first, or else it'll be conflict during training.
 4. File [hyp.scratch.yaml](https://github.com/ultralytics/yolov5/issues/607) in case it's not included in original repo (để trong folder yolov5/data/)
-5. Training script
+5. Specific GPU for training
+6. If evaluating on different dataset using pretrained model, we need to remove `best_fitness` score of the checkpoint. Note line 155 in `yolov5/train.py` to remove `best_fitness` score of the checkpoint.
+7. Training script
 
 ```bash
-python train.py --data {data_yaml_file_config} --epochs {num_epochs} --batch {batches} --weights {weights path} --cfg {model config path}
+python train.py --data {data_yaml_file_config} --epochs {num_epochs} --batch {batches} --weights {weights path} --cfg {model config path} --device 0
 ```
 If we use `crowdhuman_yolov5 checkpoint`, then we can use `yolov5m config file` in `yolov5/models/yolov5m.yaml`
 
