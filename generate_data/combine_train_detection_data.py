@@ -144,7 +144,16 @@ def cal_total_files(dir):
 
     return count
 
-combine_symlink(root_frames_dir, root_labels_dir, combine_frames_dir, combine_labels_dir)
+# combine_symlink(root_frames_dir, root_labels_dir, combine_frames_dir, combine_labels_dir)
+
+assert cal_total_files(os.path.join(root_frames_dir, 'train')) == len(os.listdir(os.path.join(combine_frames_dir, 'train')))
+assert cal_total_files(os.path.join(root_frames_dir, 'test')) == len(os.listdir(os.path.join(combine_frames_dir, 'test')))
+
+print('Successed.')
+
+print('Total train frames:', len(os.listdir(os.path.join(combine_frames_dir, 'train'))))
+print('Total test frames:', len(os.listdir(os.path.join(combine_frames_dir, 'test'))))
+
 
 # assert os.path.isdir(root_frames_dir)
 # assert os.path.isdir(root_labels_dir)
@@ -189,12 +198,3 @@ combine_symlink(root_frames_dir, root_labels_dir, combine_frames_dir, combine_la
 # print('Total frames:', total_frame)
 
 # assert len(os.listdir(combine_frames_dir)) == len(os.listdir(combine_labels_dir)) == total_frame
-
-
-assert cal_total_files(os.path.join(root_frames_dir, 'train')) == len(os.listdir(os.path.join(combine_frames_dir, 'train')))
-assert cal_total_files(os.path.join(root_frames_dir, 'test')) == len(os.listdir(os.path.join(combine_frames_dir, 'test')))
-
-print('Successed.')
-
-print('Total train frames:', len(os.listdir(os.path.join(combine_frames_dir, 'train'))))
-print('Total test frames:', len(os.listdir(os.path.join(combine_frames_dir, 'test'))))

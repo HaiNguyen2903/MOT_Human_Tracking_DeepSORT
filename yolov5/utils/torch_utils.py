@@ -133,6 +133,7 @@ def profile(x, ops, n=100, device=None):
 
 
 def is_parallel(model):
+    # return False
     return type(model) in (nn.parallel.DataParallel, nn.parallel.DistributedDataParallel)
 
 
