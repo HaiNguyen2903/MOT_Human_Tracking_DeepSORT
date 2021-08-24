@@ -24,8 +24,11 @@ def mkdir_if_missing(full_path):
         print('Create dir {}'.format(full_path))
         os.makedirs(full_path)
 
-mkdir_if_missing(combine_frames_dir)
-mkdir_if_missing(combine_labels_dir)
+mkdir_if_missing(os.path.join(combine_frames_dir, 'train'))
+mkdir_if_missing(os.path.join(combine_labels_dir, 'train'))
+
+mkdir_if_missing(os.path.join(combine_frames_dir, 'test'))
+mkdir_if_missing(os.path.join(combine_labels_dir, 'test'))
 
 
 def handle_missing_files(frame_dir, label_dir):
@@ -144,7 +147,7 @@ def cal_total_files(dir):
 
     return count
 
-# combine_symlink(root_frames_dir, root_labels_dir, combine_frames_dir, combine_labels_dir)
+combine_symlink(root_frames_dir, root_labels_dir, combine_frames_dir, combine_labels_dir)
 
 assert cal_total_files(os.path.join(root_frames_dir, 'train')) == len(os.listdir(os.path.join(combine_frames_dir, 'train')))
 assert cal_total_files(os.path.join(root_frames_dir, 'test')) == len(os.listdir(os.path.join(combine_frames_dir, 'test')))
