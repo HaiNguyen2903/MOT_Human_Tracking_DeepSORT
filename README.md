@@ -97,24 +97,46 @@ Will need first prepare a frame folder and labels folder as below:
 
 ```bash
 frames_folder_root
-        | 
-        |___ video_name_1
-        |       |___ frame_xxxxxx.jpg
-        |       |___ ...
-        |___ video_name_2
-                |___ frame_xxxxxx.jpg
-                |___ ...
+	|
+	|___train
+	|	| 
+	|	|___ video_name_1
+	|	|       |___ frame_xxxxxx.jpg
+	|	|       |___ ...
+	|	|___ video_name_2
+	|		|___ frame_xxxxxx.jpg
+	|		|___ ...
+	|		
+	|___test
+		| 
+		|___ video_name_1
+		|       |___ frame_xxxxxx.jpg
+		|       |___ ...
+		|___ video_name_2
+			|___ frame_xxxxxx.jpg
+			|___ ...
 ```
 
 ```bash
 labels_folder_root
-        | 
-        |___ video_name_1
-        |       |___ frame_xxxxxx.txt
-        |       |___ ...
-        |___ video_name_2
-                |___ frame_xxxxxx.txt
-                |___ ...
+	|
+	|___train
+	|	| 
+	|	|___ video_name_1
+	|	|       |___ frame_xxxxxx.txt
+	|	|       |___ ...
+	|	|___ video_name_2
+	|		|___ frame_xxxxxx.txt
+	|		|___ ...
+	|		
+	|___test
+		| 
+		|___ video_name_1
+		|       |___ frame_xxxxxx.txt
+		|       |___ ...
+		|___ video_name_2
+			|___ frame_xxxxxx.txt
+			|___ ...
 ```
 Where each video labels folder is in YOLO label format.
 
