@@ -6,34 +6,6 @@ import os
 import cv2
 import numpy as np
 
-# parser = argparse.ArgumentParser(description="Train on market1501")
-# parser.add_argument("--predict_path", default='predicts/features_new.pth', type=str)
-# parser.add_argument("--p_k", default=5, type=int)
-# parser.add_argument("--map_n", default=5, type=int)
-# parser.add_argument("--show", action='store_true')
-# parser.add_argument("--visualize_rank_k", default=10, type=int)
-# parser.add_argument("--inference_dir", default = "inference_test", type=str)
-
-# args = parser.parse_args()
-
-# features = torch.load(args.predict_path)
-
-# '''
-# gf: query frames: shape (frames x features_len) (208 x 512)
-# ql: query labels: vector len = number of query images
-# gf: gallery frames: shape (frames x features_len) (21549 x 512)
-# gl: gallery labels: vector len = number of gallery images
-# '''
-
-# qf = features["qf"]
-# ql = features["ql"]
-# gf = features["gf"]
-# gl = features["gl"]
-
-# query_paths = features['query_paths']
-# gallery_paths = features['gallery_paths']
-
-
 def cal_query_scores(qf, gf, query_paths, gallery_paths, limit, min_frame):
     print('Calculating features for each query ...') 
     print()
