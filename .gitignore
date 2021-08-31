@@ -5,11 +5,15 @@ yolov5/runs
 yolov5/wandb
 test_dataset
 combine_dataset
-deep_sort_pytorch/deep_sort/deep/checkpoint
 reid_dataset
 debug.ipynb
+
 deep_sort_pytorch/deep_sort/deep/checkpoint
 deep_sort_pytorch/deep_sort/deep/predicts
+deep_sort_pytorch/deep_sort/deep/training_curves
+deep_sort_pytorch/deep_sort/deep/inference
+deep_sort_pytorch/deep_sort/deep/inference_test
+
 track_dataset
 generate_data/__pycache__/
 inference/

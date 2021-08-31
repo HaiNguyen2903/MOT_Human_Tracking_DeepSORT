@@ -17,11 +17,12 @@ from IPython import embed
 
 parser = argparse.ArgumentParser(description="Train on market1501")
 parser.add_argument("--data-dir", default='/data.local/hangd/data_vtx/reid_dataset/uet_reid', type=str)
+# parser.add_argument("--data-dir", default='/data.local/hangd/data_vtx/toy_data/toy_reid_dataset/reid_dataset', type=str)
 parser.add_argument("--no-cuda", action="store_true")
 parser.add_argument("--gpu-id", default=1, type=int)
 parser.add_argument("--ckpt", default="./checkpoint/ckpt.t7", type=str)
-parser.add_argument("--batch", default=8, type=int)
-parser.add_argument("--save-path", default="predicts/features_new.pth", type=str)
+parser.add_argument("--batch", default=16, type=int)
+parser.add_argument("--save-path", default="predicts/debug.pth", type=str)
 
 args = parser.parse_args()
 
@@ -60,14 +61,16 @@ galleryloader = torch.utils.data.DataLoader(
     batch_size=args.batch, shuffle=True
 )
 
-embed()
+# embed()
 
 # net definition
 net = Net(reid=True)
 
+
 assert os.path.isfile(
     args.ckpt), "Error: no checkpoint file found!"
 print('Loading from {}'.format(args.ckpt))
+
 checkpoint = torch.load(args.ckpt, map_location=device)
 
 net_dict = checkpoint['net_dict']
@@ -95,11 +98,13 @@ gallery_paths = []
 
 
 with torch.no_grad():
-    for idx, (inputs, labels, paths) in enumerate(queryloader):
+    for idx, (inputs, labels, paths) in enumerate(queryloader):        
 
         inputs = inputs.to(device)
 
         features = net(inputs).cpu()
+
+        embed(header = 'debug test querryloader')
 
         query_features = torch.cat((query_features, features), dim=0)
         query_labels = torch.cat((query_labels, labels))
@@ -120,6 +125,8 @@ with torch.no_grad():
 # gallery_labels -= 2
 
 # save features
+
+embed(header = 'debug test')
 features = {
     "qf": query_features,
     "ql": query_labels,
