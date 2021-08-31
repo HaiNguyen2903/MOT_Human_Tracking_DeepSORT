@@ -20,7 +20,7 @@ parser.add_argument("--data-dir", default='/data.local/hangd/data_vtx/reid_datas
 # parser.add_argument("--data-dir", default='/data.local/hangd/data_vtx/toy_data/toy_reid_dataset/reid_dataset', type=str)
 parser.add_argument("--no-cuda", action="store_true")
 parser.add_argument("--gpu-id", default=1, type=int)
-parser.add_argument("--ckpt", default="./checkpoint/ckpt.t7", type=str)
+parser.add_argument("--ckpt", default="./checkpoint/original_ckpt.t7", type=str)
 parser.add_argument("--batch", default=16, type=int)
 parser.add_argument("--save-path", default="predicts/debug.pth", type=str)
 
@@ -104,8 +104,6 @@ with torch.no_grad():
 
         features = net(inputs).cpu()
 
-        embed(header = 'debug test querryloader')
-
         query_features = torch.cat((query_features, features), dim=0)
         query_labels = torch.cat((query_labels, labels))
         query_paths.extend(paths)
@@ -125,8 +123,6 @@ with torch.no_grad():
 # gallery_labels -= 2
 
 # save features
-
-embed(header = 'debug test')
 features = {
     "qf": query_features,
     "ql": query_labels,

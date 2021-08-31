@@ -39,6 +39,7 @@ def cal_query_scores(qf, gf, query_paths, gallery_paths, limit, min_frame):
     print()
     # dict of info to eval for each query where key is query_id and value are features for that query
     features = []
+    ignores = 0
 
     # for each query 
     for i in range(qf.size(0)):
@@ -78,6 +79,7 @@ def cal_query_scores(qf, gf, query_paths, gallery_paths, limit, min_frame):
 
         # check if a gallery is satisfy the requirement or not
         if len(g_paths) < min_frame:
+            ignores += 1
             continue
 
         feat = {
@@ -91,7 +93,7 @@ def cal_query_scores(qf, gf, query_paths, gallery_paths, limit, min_frame):
 
         features.append(feat)
             
-    return features
+    return features, ignores
 
 
 def calculate_rank_1(features):
@@ -318,7 +320,7 @@ if __name__ == '__main__':
     parser.add_argument("--p_k", default=5, type=int)
     parser.add_argument("--map_n", default=5, type=int)
     parser.add_argument("--range", default=100, type=int, help='evaluate in range [x-range, x+ range] for frame x')
-    parser.add_argument("--frames_require", default=10, type=int, help='min number of frame require in gallery for evaluating')
+    # parser.add_argument("--frames_require", default=10, type=int, help='min number of frame require in gallery for evaluating')
     parser.add_argument("--show", action='store_true')
     parser.add_argument("--visualize_rank_k", default=10, type=int)
     parser.add_argument("--inference_dir", default = "inference_test", type=str)
@@ -343,12 +345,14 @@ if __name__ == '__main__':
     gallery_paths = features['gallery_paths']
 
     # calculate feature base on 
-    feat_list = cal_query_scores(qf, gf, query_paths, gallery_paths, limit=args.range, min_frame = args.frames_require)
+    feat_list, ignores = cal_query_scores(qf, gf, query_paths, gallery_paths, limit=args.range, min_frame = min(args.p_k, args.map_n))
 
     calculate_rank_1(feat_list)
     calculate_precision_k(feat_list, args.p_k)
     calculate_mAP_n(feat_list, args.map_n)
 
+    print()
+    print('Number of ignore queries: {}'.format(ignores))
     if args.show:
         visualize_rank_k(feat_list, topk = args.visualize_rank_k, output_dir = args.inference_dir)
 

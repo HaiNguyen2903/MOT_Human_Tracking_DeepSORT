@@ -53,91 +53,38 @@ def make_layers(c_in, c_out, repeat_times, is_downsample=False):
 '''
 Finetuned model
 '''
-class Net(nn.Module):
-    # was 351 class (need fix to 751 to use ckpt.t7, 868 for ckpt trained on vtx data)
-    def __init__(self, num_classes=751, reid=False):
-        super(Net, self).__init__()
-        # 3 128 64
-        self.conv = nn.Sequential(
-            nn.Conv2d(3, 64, 3, stride=1, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            # nn.Conv2d(32,32,3,stride=1,padding=1),
-            # nn.BatchNorm2d(32),
-            # nn.ReLU(inplace=True),
-            nn.MaxPool2d(3, 2, padding=1),
-        )
-        # 32 64 32
-        self.layer1 = make_layers(64, 64, 2, False)
-        # 32 64 32
-        self.layer2 = make_layers(64, 128, 2, True)
-        # 64 32 16
-        self.layer3 = make_layers(128, 256, 2, True)
-        # 128 16 8
-        self.layer4 = make_layers(256, 512, 2, True)
-        # 256 8 4
-        self.avgpool = nn.AvgPool2d((8, 4), 1)
-        # 256 1 1
-        self.reid = reid
-        self.classifier = nn.Sequential(
-            nn.Linear(512, 256),
-            nn.BatchNorm1d(256),
-            nn.ReLU(inplace=True),
-            nn.Dropout(),
-            nn.Linear(256, num_classes),
-        )
-
-    def forward(self, x):
-        x = self.conv(x)
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        # B x 128
-        if self.reid:
-            x = x.div(x.norm(p=2, dim=1, keepdim=True))
-            return x
-        # classifier
-        x = self.classifier(x)
-        return x
-
-
-'''
-original model
-'''
 # class Net(nn.Module):
-#     def __init__(self, num_classes=625, reid=True):
+#     # was 351 class (need fix to 751 to use ckpt.t7, 868 for ckpt trained on vtx data)
+#     def __init__(self, num_classes=868, reid=False):
 #         super(Net, self).__init__()
 #         # 3 128 64
 #         self.conv = nn.Sequential(
-#             nn.Conv2d(3, 32, 3, stride=1, padding=1),
-#             nn.BatchNorm2d(32),
-#             nn.ELU(inplace=True),
-#             nn.Conv2d(32, 32, 3, stride=1, padding=1),
-#             nn.BatchNorm2d(32),
-#             nn.ELU(inplace=True),
+#             nn.Conv2d(3, 64, 3, stride=1, padding=1),
+#             nn.BatchNorm2d(64),
+#             nn.ReLU(inplace=True),
+#             # nn.Conv2d(32,32,3,stride=1,padding=1),
+#             # nn.BatchNorm2d(32),
+#             # nn.ReLU(inplace=True),
 #             nn.MaxPool2d(3, 2, padding=1),
 #         )
 #         # 32 64 32
-#         self.layer1 = make_layers(32, 32, 2, False)
+#         self.layer1 = make_layers(64, 64, 2, False)
 #         # 32 64 32
-#         self.layer2 = make_layers(32, 64, 2, True)
+#         self.layer2 = make_layers(64, 128, 2, True)
 #         # 64 32 16
-#         self.layer3 = make_layers(64, 128, 2, True)
+#         self.layer3 = make_layers(128, 256, 2, True)
 #         # 128 16 8
-#         self.dense = nn.Sequential(
-#             nn.Dropout(p=0.6),
-#             nn.Linear(128*16*8, 128),
-#             nn.BatchNorm1d(128),
-#             nn.ELU(inplace=True)
-#         )
+#         self.layer4 = make_layers(256, 512, 2, True)
+#         # 256 8 4
+#         self.avgpool = nn.AvgPool2d((8, 4), 1)
 #         # 256 1 1
 #         self.reid = reid
-#         self.batch_norm = nn.BatchNorm1d(128)
 #         self.classifier = nn.Sequential(
-#             nn.Linear(128, num_classes),
+#             nn.Linear(512, 256),
+#             nn.BatchNorm1d(256),
+#             nn.ReLU(inplace=True),
+#             nn.Dropout(),
+#             nn.Linear(256, num_classes),
 #         )
 
 #     def forward(self, x):
@@ -145,18 +92,71 @@ original model
 #         x = self.layer1(x)
 #         x = self.layer2(x)
 #         x = self.layer3(x)
-
+#         x = self.layer4(x)
+#         x = self.avgpool(x)
 #         x = x.view(x.size(0), -1)
+#         # B x 128
 #         if self.reid:
-#             x = self.dense[0](x)
-#             x = self.dense[1](x)
 #             x = x.div(x.norm(p=2, dim=1, keepdim=True))
 #             return x
-#         x = self.dense(x)
-#         # B x 128
 #         # classifier
 #         x = self.classifier(x)
 #         return x
+
+
+'''
+original model
+'''
+class Net(nn.Module):
+    def __init__(self, num_classes=625, reid=True):
+        super(Net, self).__init__()
+        # 3 128 64
+        self.conv = nn.Sequential(
+            nn.Conv2d(3, 32, 3, stride=1, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ELU(inplace=True),
+            nn.Conv2d(32, 32, 3, stride=1, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ELU(inplace=True),
+            nn.MaxPool2d(3, 2, padding=1),
+        )
+        # 32 64 32
+        self.layer1 = make_layers(32, 32, 2, False)
+        # 32 64 32
+        self.layer2 = make_layers(32, 64, 2, True)
+        # 64 32 16
+        self.layer3 = make_layers(64, 128, 2, True)
+        # 128 16 8
+        self.dense = nn.Sequential(
+            nn.Dropout(p=0.6),
+            nn.Linear(128*16*8, 128),
+            nn.BatchNorm1d(128),
+            nn.ELU(inplace=True)
+        )
+        # 256 1 1
+        self.reid = reid
+        self.batch_norm = nn.BatchNorm1d(128)
+        self.classifier = nn.Sequential(
+            nn.Linear(128, num_classes),
+        )
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+
+        x = x.view(x.size(0), -1)
+        if self.reid:
+            x = self.dense[0](x)
+            x = self.dense[1](x)
+            x = x.div(x.norm(p=2, dim=1, keepdim=True))
+            return x
+        x = self.dense(x)
+        # B x 128
+        # classifier
+        x = self.classifier(x)
+        return x
 
 
 if __name__ == '__main__':
