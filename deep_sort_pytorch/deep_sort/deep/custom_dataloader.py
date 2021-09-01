@@ -24,6 +24,7 @@ class ImageFolderWithPaths(datasets.ImageFolder):
 
         # make a new tuple that includes original and the path
         tuple_with_path = ((original_tuple[0], label) + (path,))
+        
         # tuple_with_path = (original_tuple + (path,))
         # embed(header = 'debug dataloader')
         return tuple_with_path

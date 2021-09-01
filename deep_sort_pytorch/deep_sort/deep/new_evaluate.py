@@ -9,36 +9,39 @@ import numpy as np
 def cal_query_scores(qf, gf, query_paths, gallery_paths, limit, min_frame):
     print('Calculating features for each query ...') 
     print()
-    # dict of info to eval for each query where key is query_id and value are features for that query
+    # list of features for each query
     features = []
+    # number of ignore cases (does not satisfy evaluation requirement)
     ignores = 0
 
     # for each query 
     for i in range(qf.size(0)):
+        # vector feature, label and path to image for each query
         q_feature = torch.tensor([]).float()
         q_label = torch.tensor([]).long()
         q_path = []
 
+        # vector features, labels and paths to images in gallery
         g_features = torch.tensor([]).float()
         g_labels = torch.tensor([]).long()
         g_paths = []
 
         # embed(header='debug')
 
-        # query_features = torch.cat((query_features, features), dim=0)
-        # query_labels = torch.cat((query_labels, labels))
-        # query_paths.extend(paths)
-
+        # update info of query
         q_feat = torch.unsqueeze(qf[i], dim=0)
         q_feature = torch.cat((q_feature, q_feat), dim = 0)
         q_label = torch.cat((q_label, torch.LongTensor([ql[i]])))
         q_path.append(query_paths[i])
 
+        # get frame index of current query
         q_frame = int(os.path.basename(q_path[0])[:-4])
-        
+
+        # calculate lower bound and upper bound of the related gallery
         lower_bound = max(0, q_frame - limit)
         upper_bound = min(gf.size(0), q_frame + limit)
 
+        # check all instances in gallery that in range [lower_bound, upper_bound] and update
         for i in range(gf.size(0)):
             g_path = gallery_paths[i]
             g_frame = int(os.path.basename(g_path)[:-4])
@@ -53,7 +56,8 @@ def cal_query_scores(qf, gf, query_paths, gallery_paths, limit, min_frame):
         if len(g_paths) < min_frame:
             ignores += 1
             continue
-
+        
+        # update features list 
         feat = {
             "qf": q_feature,
             "ql": q_label,
