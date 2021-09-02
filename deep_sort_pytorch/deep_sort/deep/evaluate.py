@@ -217,6 +217,6 @@ if __name__ == '__main__':
     calculate_precision_k(scores, args.p_k)
     calculate_mAP_n(scores, args.map_n)
     if args.show:
-        visualize_rank_k(scores, args.inference_dir)
+        visualize_rank_k(scores, args.inference_dir, topk=args.visualize_rank_k)
 
 

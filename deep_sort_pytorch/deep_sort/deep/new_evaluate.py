@@ -321,7 +321,7 @@ if __name__ == '__main__':
     gallery_paths = features['gallery_paths']
 
     # calculate feature base on 
-    feat_list, ignores = cal_query_scores(qf, gf, query_paths, gallery_paths, limit=args.range, min_frame = min(args.p_k, args.map_n))
+    feat_list, ignores = cal_query_scores(qf, gf, query_paths, gallery_paths, limit=args.range, min_frame = max(args.p_k, args.map_n, args.visualize_rank_k))
 
     calculate_rank_1(feat_list)
     calculate_precision_k(feat_list, args.p_k)
