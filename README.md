@@ -306,7 +306,7 @@ gallery_paths: list of paths for all gallery images	# for visualization
 In `deep_sort_pytorch/deep_sort/deep`, run:
 
 ```bash
-python evaluate.py --predict-path {path/to/saved/features/metric} --p_k {k in P@k evaluation} --map_n {n in mAP@n evaluation}
+python evaluate.py --predict-path {path/to/saved/features/metric} --p_k {k in P@k evaluation} --mAP_n {n in mAP@n evaluation}
 ```
 
 **2. Evaluating each query on it's own sub-gallery**
@@ -320,7 +320,7 @@ Note that since each gallery is only in a limited number of frame, there can be 
 In `deep_sort_pytorch/deep_sort/deep`, run:
 
 ```bash
-python new_evaluate.py --predict-path {path/to/saved/features/metric} --p_k {k in P@k evaluation} --map_n {n in mAP@n evaluation}
+python new_evaluate.py --predict-path {path/to/saved/features/metric} --p_k {k in P@k evaluation} --mAP_n {n in mAP@n evaluation}
 ```
 There is also optional param for showing top k matched images for each query.
 

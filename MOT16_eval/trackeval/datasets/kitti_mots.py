@@ -114,7 +114,7 @@ class KittiMOTS(_BaseDataset):
     def _get_seq_info(self):
         seq_list = []
         seq_lengths = {}
-        seqmap_name = 'evaluate_mots.seqmap.' + self.config['SPLIT_TO_EVAL']
+        seqmAP_name = 'evaluate_mots.seqmap.' + self.config['SPLIT_TO_EVAL']
 
         if self.config["SEQ_INFO"]:
             seq_list = list(self.config["SEQ_INFO"].keys())
@@ -124,9 +124,9 @@ class KittiMOTS(_BaseDataset):
                 seqmap_file = self.config["SEQMAP_FILE"]
             else:
                 if self.config["SEQMAP_FOLDER"] is None:
-                    seqmap_file = os.path.join(self.config['GT_FOLDER'], seqmap_name)
+                    seqmap_file = os.path.join(self.config['GT_FOLDER'], seqmAP_name)
                 else:
-                    seqmap_file = os.path.join(self.config["SEQMAP_FOLDER"], seqmap_name)
+                    seqmap_file = os.path.join(self.config["SEQMAP_FOLDER"], seqmAP_name)
             if not os.path.isfile(seqmap_file):
                 print('no seqmap found: ' + seqmap_file)
                 raise TrackEvalException('no seqmap found: ' + os.path.basename(seqmap_file))

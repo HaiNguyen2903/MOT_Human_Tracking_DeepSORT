@@ -5,14 +5,33 @@ import argparse
 import os
 import cv2
 import numpy as np
+from os import path as osp
 
-def cal_query_scores(qf, gf, query_paths, gallery_paths, limit, min_frame):
+
+def get_frame_index(path):
+    return int(os.path.basename(path)[:-4])
+
+
+def get_dirname(path):
+    dir_path = osp.dirname(path)
+    return int(osp.base(dir_path))
+
+
+def collect_features(qf, ql, gf, gl, query_paths, gallery_paths, limit, min_frame):
     print('Calculating features for each query ...') 
     print()
     # list of features for each query
     features = []
     # number of ignore cases (does not satisfy evaluation requirement)
     ignores = 0
+
+    max_frame = 0
+
+    # get max frame in gallery
+    for path in gallery_paths:
+        gframe = get_frame_index(path)
+        if gframe > max_frame:
+            max_frame = gframe
 
     # for each query 
     for i in range(qf.size(0)):
@@ -39,7 +58,8 @@ def cal_query_scores(qf, gf, query_paths, gallery_paths, limit, min_frame):
 
         # calculate lower bound and upper bound of the related gallery
         lower_bound = max(0, q_frame - limit)
-        upper_bound = min(gf.size(0), q_frame + limit)
+        # upper_bound = min(gf.size(0), q_frame + limit)
+        upper_bound = min(max_frame, q_frame + limit)
 
         # check all instances in gallery that in range [lower_bound, upper_bound] and update
         for i in range(gf.size(0)):
@@ -68,7 +88,9 @@ def cal_query_scores(qf, gf, query_paths, gallery_paths, limit, min_frame):
         }
 
         features.append(feat)
-            
+
+    # embed(header='debug collect features')
+
     return features, ignores
 
 
@@ -95,10 +117,10 @@ def calculate_rank_1(features):
 
         mean_top1_acc += top1acc
     
-    mean_top1_acc /= len(features)
+    mean_top1_acc = (mean_top1_acc / len(features)) 
 
     # print("Accuracy top 1: {:.3f}".format(top1correct / ql.size(0)))
-    print("Accuracy top 1: {:.3f}".format(mean_top1_acc))
+    print("Accuracy top 1: {:.5f}".format(mean_top1_acc))
     return mean_top1_acc
 
 
@@ -118,8 +140,6 @@ def calculate_precision_k(features, k):
         # return vector of index in scores metric that have highest score for each query: len = query frame
         res = score.topk(k, dim=1)[1]
 
-        # embed(header = 'debug pk')
-
         # top_pred for each query, return matrix of number query x k
         pred = gl[res]
 
@@ -130,8 +150,8 @@ def calculate_precision_k(features, k):
 
         avg_acc += acc
 
-    avg_acc = avg_acc / len(features)
-    print('P@{}: {:.3f}'.format(k, avg_acc))
+    avg_acc = (avg_acc / len(features)) 
+    print('P@{}: {:.5f}'.format(k, avg_acc))
 
     return avg_acc
 
@@ -183,9 +203,9 @@ def calculate_mAP_n(features, n):
         # add AP to calculate mAP on all queries
         mAP += AP 
 
-    mAP /= len(features)
+    mAP = (mAP / len(features)) 
     # print(pred_k.shape)
-    print('mAP@{}: {:.3f}'.format(n, mAP))
+    print('mAP@{}: {:.5f}'.format(n, mAP))
     return mAP
 
 
@@ -288,23 +308,9 @@ def visualize_rank_k(features, output_dir, topk, width=128, height=256):
     
     print()
     print('Successfully saving inference images.')
-    
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Train on market1501")
-    parser.add_argument("--predict_path", default='predicts/features_new.pth', type=str)
-    parser.add_argument("--p_k", default=5, type=int)
-    parser.add_argument("--map_n", default=5, type=int)
-    parser.add_argument("--range", default=100, type=int, help='evaluate in range [x-range, x+ range] for frame x')
-    # parser.add_argument("--frames_require", default=10, type=int, help='min number of frame require in gallery for evaluating')
-    parser.add_argument("--show", action='store_true')
-    parser.add_argument("--visualize_rank_k", default=10, type=int)
-    parser.add_argument("--inference_dir", default = "inference_test", type=str)
 
-    args = parser.parse_args()
-
-    features = torch.load(args.predict_path)
-
+def evaluate(features, p_k, mAP_n, range, show = False, visualize_topk=5, infer_dir = None):
     '''
     gf: query frames: shape (frames x features_len) (208 x 512)
     ql: query labels: vector len = number of query images
@@ -320,16 +326,46 @@ if __name__ == '__main__':
     query_paths = features['query_paths']
     gallery_paths = features['gallery_paths']
 
-    # calculate feature base on 
-    feat_list, ignores = cal_query_scores(qf, gf, query_paths, gallery_paths, limit=args.range, min_frame = max(args.p_k, args.map_n, args.visualize_rank_k))
+    # if visualize top k
+    if show:
+        min_frame = max(p_k, mAP_n, visualize_topk)
+    else:
+        min_frame = max(p_k, mAP_n)
 
-    calculate_rank_1(feat_list)
-    calculate_precision_k(feat_list, args.p_k)
-    calculate_mAP_n(feat_list, args.map_n)
+    # calculate feature base on 
+    feat_list, ignores = collect_features(qf, ql, gf, gl, query_paths, gallery_paths, limit=range, min_frame=min_frame)
+
+    acc_top1 = calculate_rank_1(feat_list)
+    precision_k = calculate_precision_k(feat_list, p_k)
+    mAP = calculate_mAP_n(feat_list, mAP_n)
 
     print()
     print('Number of ignore queries: {}'.format(ignores))
-    if args.show:
-        visualize_rank_k(feat_list, topk = args.visualize_rank_k, output_dir = args.inference_dir)
+    if show:
+        visualize_rank_k(feat_list, topk = visualize_topk, output_dir = infer_dir)
+
+    return acc_top1, precision_k, mAP
 
 
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Train on market1501")
+    parser.add_argument("--predict_path", default='predicts/features_new.pth', type=str)
+    parser.add_argument("--p_k", default=5, type=int)
+    parser.add_argument("--mAP_n", default=5, type=int)
+    parser.add_argument("--range", default=100, type=int, help='evaluate in range [x-range, x+ range] for frame x')
+    # parser.add_argument("--frames_require", default=10, type=int, help='min number of frame require in gallery for evaluating')
+    parser.add_argument("--show", action='store_true')
+    parser.add_argument("--visualize_top_k", default=10, type=int)
+    parser.add_argument("--inference_dir", default = "inference_test", type=str)
+
+    args = parser.parse_args()
+
+    features = torch.load(args.predict_path)
+
+    evaluate(features = features,
+            p_k = args.p_k,
+            mAP_n = args.mAP_n,
+            range = args.range,
+            show = args.show,
+            visualize_topk = args.visualize_top_k,
+            infer_dir = args.inference_dir)

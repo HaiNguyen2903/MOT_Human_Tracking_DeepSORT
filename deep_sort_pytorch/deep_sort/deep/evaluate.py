@@ -5,48 +5,58 @@ import os
 import cv2
 import numpy as np
 
-parser = argparse.ArgumentParser(description="Train on market1501")
-parser.add_argument("--predict_path", default='predicts/features_new.pth', type=str)
-parser.add_argument("--p_k", default=5, type=int)
-parser.add_argument("--map_n", default=5, type=int)
-parser.add_argument("--show", action='store_true')
-parser.add_argument("--visualize_rank_k", default=10, type=int)
-parser.add_argument("--inference_dir", default = "inference_test", type=str)
+# parser = argparse.ArgumentParser(description="Train on market1501")
+# parser.add_argument("--predict_path", default='predicts/features_new.pth', type=str)
+# parser.add_argument("--p_k", default=5, type=int)
+# parser.add_argument("--mAP_n", default=5, type=int)
+# parser.add_argument("--show", action='store_true')
+# parser.add_argument("--visualize_rank_k", default=10, type=int)
+# parser.add_argument("--inference_dir", default = "inference_test", type=str)
 
-args = parser.parse_args()
+# args = parser.parse_args()
 
-features = torch.load(args.predict_path)
+# features = torch.load(args.predict_path)
 
-'''
-gf: query frames: shape (frames x features_len) (208 x 512)
-ql: query labels: vector len = number of query images
-gf: gallery frames: shape (frames x features_len) (21549 x 512)
-gl: gallery labels: vector len = number of gallery images
-'''
+# '''
+# gf: query frames: shape (frames x features_len) (208 x 512)
+# ql: query labels: vector len = number of query images
+# gf: gallery frames: shape (frames x features_len) (21549 x 512)
+# gl: gallery labels: vector len = number of gallery images
+# '''
 
-qf = features["qf"]
-ql = features["ql"]
-gf = features["gf"]
-gl = features["gl"]
+# qf = features["qf"]
+# ql = features["ql"]
+# gf = features["gf"]
+# gl = features["gl"]
 
-query_paths = features['query_paths']
-gallery_paths = features['gallery_paths']
+# query_paths = features['query_paths']
+# gallery_paths = features['gallery_paths']
 
-# matrix of confidence with shape (query frames x gallery frames)
-scores = qf.mm(gf.t())
+# # matrix of confidence with shape (query frames x gallery frames)
+# scores = qf.mm(gf.t())
 
-def calculate_rank_1(scores):
+def calculate_rank_1(scores, features):
+    qf = features["qf"]
+    ql = features["ql"]
+    gf = features["gf"]
+    gl = features["gl"]
+
     # return vector of index in scores metric that have highest score for each query: len = query frame
-    res = scores.topk(5, dim=1)[1][:, 0]
+    res = scores.topk(1, dim=1)[1][:, 0]
 
     # total equal values between ql and ql vectors
     top1correct = gl[res].eq(ql).sum().item()
     
-    print("Accuracy top 1: {:.3f}".format(top1correct / ql.size(0)))
-    return top1correct / ql.size(0)
+    print("Accuracy top 1: {:.5f}".format(top1correct / ql.size(0)))
+    return (top1correct / ql.size(0))
 
 
-def calculate_precision_k(scores, k=5):
+def calculate_precision_k(scores, features, k=5):
+    qf = features["qf"]
+    ql = features["ql"]
+    gf = features["gf"]
+    gl = features["gl"]
+
     # return vector of index in scores metric that have highest score for each query: len = query frame
     res = scores.topk(k, dim=1)[1]
 
@@ -67,9 +77,9 @@ def calculate_precision_k(scores, k=5):
         avg_acc += acc
 
     # calculate average acc
-    avg_acc /= ql.size(0)
+    avg_acc = (avg_acc / ql.size(0)) 
 
-    print('P@{}: {:.3f}'.format(k, avg_acc))
+    print('P@{}: {:.5f}'.format(k, avg_acc))
     return avg_acc
 
 
@@ -77,7 +87,12 @@ def calculate_precision_k(scores, k=5):
 Calculate precison@k and AP@n for each query instead of average on all queries
 '''
 
-def calculate_mAP_n(scores, n=5):
+def calculate_mAP_n(scores, features, n=5):
+    qf = features["qf"]
+    ql = features["ql"]
+    gf = features["gf"]
+    gl = features["gl"]
+
     mAP = 0
 
     res = scores.topk(n, dim=1)[1]
@@ -120,9 +135,9 @@ def calculate_mAP_n(scores, n=5):
         # add AP to calculate mAP on all queries
         mAP += AP 
 
-    mAP /= ql.size(0)
+    mAP = (mAP / ql.size(0)) 
     # print(pred_k.shape)
-    print('mAP@{}: {:.3f}'.format(n, mAP))
+    print('mAP@{}: {:.5f}'.format(n, mAP))
     return mAP
 
 
@@ -142,7 +157,15 @@ def mkdir_if_missing(path):
         os.mkdir(path)
 
 
-def visualize_rank_k(scores, output_dir, width=128, height=256, topk=10):
+def visualize_rank_k(scores, features, output_dir, width=128, height=256, topk=10):
+    qf = features["qf"]
+    ql = features["ql"]
+    gf = features["gf"]
+    gl = features["gl"]
+
+    query_paths = features['query_paths']
+    gallery_paths = features['gallery_paths']
+
     mkdir_if_missing(output_dir)
 
     # return vector of index in scores metric that have highest score for each query: len = query frame
@@ -211,12 +234,75 @@ def visualize_rank_k(scores, output_dir, width=128, height=256, topk=10):
         print('Writing {}.jpg'.format(imname))
 
     print('Successfully.')
+
+
+def evaluate(features, p_k, mAP_n, range, show = False, visualize_topk=5, infer_dir = None):
+    qf = features["qf"]
+    ql = features["ql"]
+    gf = features["gf"]
+    gl = features["gl"]
     
+    query_paths = features['query_paths']
+    gallery_paths = features['gallery_paths']
+
+    # matrix of confidence with shape (query frames x gallery frames)
+    scores = qf.mm(gf.t())
+
+    acc_top1 = calculate_rank_1(scores, features)
+    precision_k = calculate_precision_k(scores, features, k = p_k)
+    mAP = calculate_mAP_n(scores, features, n = mAP_n)
+    
+    if show:
+        visualize_rank_k(scores, features, output_dir=infer_dir, topk=visualize_topk)
+
+    return acc_top1, precision_k, mAP
+
+
+
+
 if __name__ == '__main__':
-    calculate_rank_1(scores)
-    calculate_precision_k(scores, args.p_k)
-    calculate_mAP_n(scores, args.map_n)
-    if args.show:
-        visualize_rank_k(scores, args.inference_dir, topk=args.visualize_rank_k)
+    parser = argparse.ArgumentParser(description="Train on market1501")
+    parser.add_argument("--predict_path", default='predicts/features_new.pth', type=str)
+    parser.add_argument("--p_k", default=5, type=int)
+    parser.add_argument("--mAP_n", default=5, type=int)
+    parser.add_argument("--show", action='store_true')
+    parser.add_argument("--visualize_top_k", default=10, type=int)
+    parser.add_argument("--inference_dir", default = "inference_test", type=str)
+
+    args = parser.parse_args()
+
+    features = torch.load(args.predict_path)
+
+    evaluate(features = features,
+            p_k = args.p_k,
+            mAP_n = args.mAP_n,
+            range = 0,
+            show = args.show,
+            visualize_topk = args.visualize_top_k,
+            infer_dir = args.inference_dir)
+
+    # '''
+    # gf: query frames: shape (frames x features_len) (208 x 512)
+    # ql: query labels: vector len = number of query images
+    # gf: gallery frames: shape (frames x features_len) (21549 x 512)
+    # gl: gallery labels: vector len = number of gallery images
+    # '''
+
+    # qf = features["qf"]
+    # ql = features["ql"]
+    # gf = features["gf"]
+    # gl = features["gl"]
+
+    # query_paths = features['query_paths']
+    # gallery_paths = features['gallery_paths']
+
+    # # matrix of confidence with shape (query frames x gallery frames)
+    # scores = qf.mm(gf.t())
+
+    # calculate_rank_1(scores)
+    # calculate_precision_k(scores, args.p_k)
+    # calculate_mAP_n(scores, args.mAP_n)
+    # if args.show:
+    #     visualize_rank_k(scores, args.inference_dir, topk=args.visualize_rank_k)
 
 

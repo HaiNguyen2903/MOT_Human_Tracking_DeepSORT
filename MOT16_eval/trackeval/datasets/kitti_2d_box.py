@@ -65,8 +65,8 @@ class Kitti2DBox(_BaseDataset):
         # Get sequences to eval and check gt files exist
         self.seq_list = []
         self.seq_lengths = {}
-        seqmap_name = 'evaluate_tracking.seqmap.' + self.config['SPLIT_TO_EVAL']
-        seqmap_file = os.path.join(self.gt_fol, seqmap_name)
+        seqmAP_name = 'evaluate_tracking.seqmap.' + self.config['SPLIT_TO_EVAL']
+        seqmap_file = os.path.join(self.gt_fol, seqmAP_name)
         if not os.path.isfile(seqmap_file):
             raise TrackEvalException('no seqmap found: ' + os.path.basename(seqmap_file))
         with open(seqmap_file) as fp:

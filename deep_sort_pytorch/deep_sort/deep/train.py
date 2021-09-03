@@ -1,5 +1,7 @@
 import argparse
+from test import calculate_features
 import os
+from struct import calcsize
 import time
 
 import numpy as np
@@ -11,11 +13,15 @@ from IPython import embed
 from model import Net
 from custom_dataloader import *
 import wandb
+from test import *
+import evaluate_frame_base as eval_fb
+import evaluate_trajectory_base as eval_tb
+import evaluate as eval_default
 
 parser = argparse.ArgumentParser(description="Train on market1501")
 # parser.add_argument("--data-dir", default='data', type=str)
-# parser.add_argument("--data-dir", default='/data.local/hangd/data_vtx/reid_dataset/uet_reid', type=str)
-parser.add_argument("--data-dir", default='/data.local/hangd/data_vtx/toy_data/toy_reid_dataset/reid_dataset', type=str)
+parser.add_argument("--data-dir", default='/data.local/hangd/data_vtx/reid_dataset/uet_reid', type=str)
+# parser.add_argument("--data-dir", default='/data.local/hangd/data_vtx/toy_data/toy_reid_dataset/reid_dataset', type=str)
 parser.add_argument("--no-cuda", action="store_true")
 parser.add_argument("--gpu-id", default=0, type=int)
 # parser.add_argument("--lr", default=0.1, type=float)
@@ -25,7 +31,9 @@ parser.add_argument('--resume', '-r', action='store_true')
 parser.add_argument('--ckpt', default = './checkpoint/ckpt.t7', type=str)
 parser.add_argument('--epochs', default=25, type=int)
 parser.add_argument('--batch', default=16, type=int)
-parser.add_argument('--save-ckpt-path', default='checkpoint/debug.t7', type=str)
+# parser.add_argument('--save-ckpt-path', default='checkpoint/debug.t7', type=str)
+parser.add_argument('--save-dir', default='checkpoint', type=str)
+parser.add_argument('--ckpt-name', default='debug', type=str)
 parser.add_argument('--save-result', default='training_curves/train.jpg', type=str)
 parser.add_argument('--project-name', default='Reid_Deepsort', type=str)
 parser.add_argument('--run-name', default='new_run', type=str)
@@ -157,7 +165,12 @@ criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(
     net.parameters(), args.lr, momentum=0.9, weight_decay=5e-4)
 
+
 best_acc = 0.
+best_mAP_default = 0.
+best_mAP_tb = 0.
+best_mAP_fb = 0.
+
 
 # train function for each epoch
 
@@ -219,63 +232,116 @@ def train(epoch):
     print('Total corrects for epoch {}: {}'.format(epoch, correct))
     print('Total samples for epoch {}: {}'.format(epoch, total))
     print()
-    return train_loss/len(trainloader), 100.*correct/total
+
+    train_loss, train_acc = train_loss/len(trainloader), 100.*correct/total
+
+    return train_loss, train_acc
 
 
-def test(epoch):
-    global best_acc
+def eval_epoch(epoch):
+    global best_mAP_default
+    global best_mAP_tb
+    global best_mAP_fb
 
-    global net
+    # only use embedding part, ignore classify layers
+    state_dict = net.state_dict()
+    reid_net = Net(num_classes=num_classes, reid=True)
+    reid_net.load_state_dict(state_dict, strict=False)
 
-    net_eval = net(reid=True)   # change net
+    features = calculate_features(net=reid_net,
+                                  root_dir = root,
+                                  batch=args.batch,
+                                  device=device,
+                                  save_features=False)
 
-    net_eval.eval()     # change net
 
-    test_loss = 0.
-    correct = 0
-    total = 0
-    start = time.time()
+    # eval default on whole gallery
+    acc_top1_default, precision_k_default, mAP_default = eval_default.evaluate(features = features,
+                                                                                p_k = 5,
+                                                                                mAP_n = 5,
+                                                                                range = 100,
+                                                                                show = False)
 
-    with torch.no_grad():
-        print("Testing ...")
-        # embed(header='debug each test batch')
+    acc_top1_tb, precision_k_tb, mAP_tb = eval_tb.evaluate(features = features,
+                                                            p_k = 5,
+                                                            mAP_n = 5,
+                                                            range = 100,
+                                                            show = False)
 
-        for idx, (inputs, labels, paths) in enumerate(testloader):
-            inputs, labels = inputs.to(device), labels.to(device)
-            outputs = net_eval(inputs)  # change net
-            loss = criterion(outputs, labels)
+    acc_top1_fb, precision_k_fb, mAP_fb = eval_fb.evaluate(features = features,
+                                                                p_k = 5,
+                                                                mAP_n = 5,
+                                                                range = 100,
+                                                                show = False)
 
-            embed(header='debug inside test batch')
+    print()
+    print('Testing on whole gallery')
+    print('Top 1 acc: {:.5f} \t P@5: {:.5f} \t mAP@5: {:.5f}'.format(acc_top1_default, precision_k_default, mAP_default))
+    print()
 
-            test_loss += loss.item()
+    print('Testing base on trajectory')
+    print('Top 1 acc: {:.5f} \t P@5: {:.5f} \t mAP@5: {:.5f}'.format(acc_top1_tb, precision_k_tb, mAP_tb))
+    print()
 
-            correct += outputs.max(dim=1)[1].eq(labels).sum().item()
-            total += labels.size(0)
+    print('Testing base on frames')
+    print('Top 1 acc: {:.5f} \t P@5: {:.5f} \t mAP@5: {:.5f}'.format(acc_top1_fb, precision_k_fb, mAP_fb))
+    print()
 
-            # correct += outputs.max(dim=1)[1].eq(gallery_labels).sum().item()
 
-        end = time.time()
-        print("Epoch: {} \t [progress: {:.1f}%] \t time: {:.2f}s \t Loss:{:.5f} \t Correct:{}/{} \t Acc:{:.3f}%".format(epoch+1,
-            100.*(idx+1)/len(testloader), end-start, test_loss /
-            len(testloader), correct, total, 100.*correct/total
-        ))
+    if mAP_default > best_mAP_default:
+        best_mAP_default = mAP_default
 
-    # saving checkpoint
-    acc = 100.*correct/total
-    if acc > best_acc:
-        best_acc = acc
-        print("Saving parameters to {}".format(args.save_ckpt_path))
+        save_path = os.path.join(args.save_dir, args.ckpt_name + '_eval_default.t7')
+
+        print("Saving parameters to {}".format(save_path))
         checkpoint = {
             'net_dict': net.state_dict(),
-            'acc': acc,
+            'acc': 0,
             'epoch': epoch,
+            'mAP': best_mAP_default
         }
 
-        if not os.path.isdir('checkpoint'):
-            os.mkdir('checkpoint')
-        torch.save(checkpoint, args.save_ckpt_path)
+        if not os.path.isdir(args.save_dir):
+            os.mkdir(args.save_dir)
+        torch.save(checkpoint, save_path)
 
-    return test_loss/len(testloader), acc
+
+    if mAP_tb > best_mAP_tb:
+        best_mAP_tb = mAP_tb
+
+        save_path = os.path.join(args.save_dir, args.ckpt_name + '_eval_trajectory.t7')
+
+        print("Saving parameters to {}".format(save_path))
+        checkpoint = {
+            'net_dict': net.state_dict(),
+            'acc': 0,
+            'epoch': epoch,
+            'mAP': best_mAP_tb
+        }
+
+        if not os.path.isdir(args.save_dir):
+            os.mkdir(args.save_dir)
+        torch.save(checkpoint, save_path)
+
+
+    if mAP_fb > best_mAP_fb:
+        best_mAP_fb = mAP_fb
+
+        save_path = os.path.join(args.save_dir, args.ckpt_name + '_eval_frame.t7')
+
+        print("Saving parameters to {}".format(save_path))
+        checkpoint = {
+            'net_dict': net.state_dict(),
+            'acc': 0,
+            'epoch': epoch,
+            'mAP': best_mAP_fb
+        }
+
+        if not os.path.isdir(args.save_dir):
+            os.mkdir(args.save_dir)
+        torch.save(checkpoint, save_path)
+
+    return acc_top1_default, precision_k_default, mAP_default, acc_top1_tb, precision_k_tb, mAP_tb, acc_top1_fb, precision_k_fb, mAP_fb
 
 
 # plot figure
@@ -303,9 +369,8 @@ def draw_curve(epoch, train_loss, train_acc, test_loss, test_acc):
         ax1.legend()
     fig.savefig(args.save_result)
 
+
 # lr decay
-
-
 def lr_decay():
     global optimizer
     # embed(header='debug optimizer')
@@ -318,32 +383,96 @@ def lr_decay():
 
 
 def main():
-    # run = wandb.init(project = args.project_name, tags=["training vtx"])
-    # run.name = args.run_name
+    run = wandb.init(project = args.project_name, tags=["training vtx"])
+    run.name = args.run_name
 
     global optimizer
+
+    top1_defaults = []
+    p_k_defaults = []
+    map_defaults = []
+
+    top1_tbs = []
+    p_k_tbs = []
+    map_tbs = []
+
+    top1_fbs = []
+    p_k_fbs = []
+    map_fbs = []
+
+    epochs = []
 
     for epoch in range(start_epoch, start_epoch + args.epochs):
 
         train_loss, train_acc = train(epoch)
-        test_loss, test_acc = test(epoch)
-        draw_curve(epoch, train_loss, train_acc, test_loss, test_acc)
+        acc_top1_default, precision_k_default, mAP_default, acc_top1_tb, precision_k_tb, mAP_tb, acc_top1_fb, precision_k_fb, mAP_fb = eval_epoch(epoch)
 
-        # wandb.log({'train/loss': train_loss,
-        #             'train/top1_acc': train_acc}
-        #             )
+        top1_defaults.append(acc_top1_default)
+        p_k_defaults.append(precision_k_default)
+        map_defaults.append(mAP_default)
 
-        # for params in optimizer.param_groups:
-        #     wandb.log({'train/lr': params['lr']})
+        top1_tbs.append(acc_top1_tb)
+        p_k_tbs.append(precision_k_tb)
+        map_tbs.append(mAP_tb)
 
-        # wandb.log({'test/loss': test_loss,
-        #             'test/top1_acc': test_acc}
-        #             )
+        top1_fbs.append(acc_top1_fb)
+        p_k_fbs.append(precision_k_fb)
+        map_fbs.append(mAP_fb)
+
+        epochs.append(epoch)
+
+        # draw_curve(epoch, train_loss, train_acc, test_loss, test_acc)
+
+        # logging with wandb
+        wandb.log({'train/loss': train_loss,
+                    'train/top1_acc': train_acc}
+                    )
+
+        for params in optimizer.param_groups:
+            wandb.log({'train/lr': params['lr']})
+
+        wandb.log({'eval_whole_gallery/acc_top1': acc_top1_default,
+                    'eval_whole_gallery/p@5': precision_k_default,
+                    'eval_whole_gallery/mAP@5': mAP_default}
+                    )
+
+        wandb.log({'eval_trajectory_base/acc_top1': acc_top1_tb,
+                    'eval_trajectory_base/p@5': precision_k_tb,
+                    'eval_trajectory_base/mAP@5': mAP_tb}
+                    )
+
+        wandb.log({'eval_frame_base/acc_top1': acc_top1_fb,
+                    'eval_frame_base/p@5': precision_k_fb,
+                    'eval_frame_base/mAP@5': mAP_fb}
+                    )
 
         # if (epoch+1) % 20 == 0:
         # decay for every 5 epochs
         if (epoch+1) % 5 == 0:
             lr_decay()
+
+    # embed()
+
+    wandb.log({"Top 1 Accuracy" : wandb.plot.line_series(
+          xs=epochs,
+          ys=[top1_defaults, top1_tbs, top1_fbs],
+          keys=["eval on whole gallery", "eval by trajectory", "eval by frame"],
+          title="new",
+          xname="epochs")})
+
+    wandb.log({"P@5" : wandb.plot.line_series(
+          xs=epochs,
+          ys=[p_k_defaults, p_k_tbs, p_k_fbs],
+          keys=["eval on whole gallery", "eval by trajectory", "eval by frame"],
+          title="new",
+          xname="epochs")})
+    
+    wandb.log({"mAP@5" : wandb.plot.line_series(
+          xs=epochs,
+          ys=[map_defaults, map_tbs, map_fbs],
+          keys=["eval on whole gallery", "eval by trajectory", "eval by frame"],
+          title="new",
+          xname="epochs")})
 
 
 if __name__ == '__main__':
