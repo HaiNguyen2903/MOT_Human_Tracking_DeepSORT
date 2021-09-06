@@ -297,8 +297,8 @@ qf: matrix of vector features for each query
 ql: matrix of query labels
 gf: matrix of vector features for each gallery
 gl: matrix of gallery labels
-query_paths: list of paths for all query images 	# for visualization
-gallery_paths: list of paths for all gallery images	# for visualization
+query_paths: list of paths for all query images 	
+gallery_paths: list of paths for all gallery images	
 ```
 
 **1. Evaluating on the whole gallery for all queries**
@@ -309,19 +309,27 @@ In `deep_sort_pytorch/deep_sort/deep`, run:
 python evaluate.py --predict-path {path/to/saved/features/metric} --p_k {k in P@k evaluation} --mAP_n {n in mAP@n evaluation}
 ```
 
-**2. Evaluating each query on it's own sub-gallery**
+**2. Evaluating each query on a gallery base on frame id of each query** 
 
 Since the ReID module in Deepsort mainly focus on solving the ID switch problem in tracking process, it's unnecessary to search a query on the whole gallery. Instead of that, we just need to evaluate a query in a certain frame length. 
 
 For example, a query instance that appear in frame `x` just need to be evaluated on a gallery with all instance from frame `x - range` to frame `x + range`, where `range` is a pre-defined number (we set range = 100 by default).
 
-Note that since each gallery is only in a limited number of frame, there can be some cases that the number of instances is smaller than `k` and `n` in `p@k` and `mAP@n` evaluation. However, it's quite rare because `k` and `n` is small (5 or 10). We can solve it easily by just ignore that gallery and reference query.
-
 In `deep_sort_pytorch/deep_sort/deep`, run:
 
 ```bash
-python new_evaluate.py --predict-path {path/to/saved/features/metric} --p_k {k in P@k evaluation} --mAP_n {n in mAP@n evaluation}
+python evaluate_frame_base.py --predict-path {path/to/saved/features/metric} --p_k {k in P@k evaluation} --mAP_n {n in mAP@n evaluation}
 ```
+
+**3. Evaluating each query on a gallery base on trajectory of each person id** 
+In this algorithm, for each person id, we first find the first frame the id appears and the last frame the id appears, and define them as `start_trajectory_frame` and `end_trajectory_frame` of the id's trajectory. 
+
+We then evaluate a query on a gallery with all instance from frame `start_trajectory_frame - range` to frame `end_trajectory_frame + range`, where `range` is a pre-defined number (we set range = 100 by default).
+
+However, this algorithm is almost similar as the 2th algorithm (base on query frame id).
+
+Note that since each gallery is only in a limited number of frame, there can be some cases that the number of instances is smaller than `k` and `n` in `p@k` and `mAP@n` evaluation. However, it's quite rare because `k` and `n` is small (5 or 10). We can solve it easily by just ignore that gallery and reference query.
+
 There is also optional param for showing top k matched images for each query.
 
 ## Tracking
