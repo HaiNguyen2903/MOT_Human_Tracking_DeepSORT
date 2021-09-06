@@ -29,7 +29,7 @@ parser.add_argument("--lr", default=3e-4, type=float)
 parser.add_argument("--interval", '-i', default=20, type=int)
 parser.add_argument('--resume', '-r', action='store_true')
 parser.add_argument('--ckpt', default = './checkpoint/ckpt.t7', type=str)
-parser.add_argument('--epochs', default=25, type=int)
+parser.add_argument('--epochs', default=30, type=int)
 parser.add_argument('--batch', default=16, type=int)
 # parser.add_argument('--save-ckpt-path', default='checkpoint/debug.t7', type=str)
 parser.add_argument('--save-dir', default='checkpoint', type=str)
@@ -298,7 +298,8 @@ def eval_epoch(epoch):
             'net_dict': net.state_dict(),
             'acc': 0,
             'epoch': epoch,
-            'mAP': best_mAP_default
+            'mAP': best_mAP_default,
+            'num_classes': num_classes
         }
 
         if not os.path.isdir(args.save_dir):
@@ -316,7 +317,8 @@ def eval_epoch(epoch):
             'net_dict': net.state_dict(),
             'acc': 0,
             'epoch': epoch,
-            'mAP': best_mAP_tb
+            'mAP': best_mAP_tb,
+            'num_classes': num_classes
         }
 
         if not os.path.isdir(args.save_dir):
@@ -334,7 +336,8 @@ def eval_epoch(epoch):
             'net_dict': net.state_dict(),
             'acc': 0,
             'epoch': epoch,
-            'mAP': best_mAP_fb
+            'mAP': best_mAP_fb,
+            'num_classes': num_classes
         }
 
         if not os.path.isdir(args.save_dir):

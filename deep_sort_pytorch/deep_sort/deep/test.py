@@ -135,7 +135,7 @@ from IPython import embed
 # torch.save(features, args.save_path)
 
 
-def calculate_features(net, root_dir, batch, device, save_features = True, save_path = None):
+def calculate_features(net, root_dir, batch, device, save_features = True, save_dir = None, save_name = None):
     net.eval()
     net.to(device)
 
@@ -207,6 +207,8 @@ def calculate_features(net, root_dir, batch, device, save_features = True, save_
     }
 
     if save_features:
+        # save_name = os.path.basename(args.ckpt)[:-3]
+        save_path = os.path.join(save_dir, 'features_' + save_name + '.pth')
         torch.save(features, save_path)
         print('Save features to {}'.format(save_path))
 
@@ -215,13 +217,16 @@ def calculate_features(net, root_dir, batch, device, save_features = True, save_
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Train on market1501")
-    parser.add_argument("--data-dir", default='/data.local/hangd/data_vtx/reid_dataset/uet_reid', type=str)
+    parser.add_argument("--data-dir", default='/data.local/hangd/data_vtx/DATA_ROOT/combine_dataset/reid_dataset', type=str)
+    # parser.add_argument("--data-dir", default='/data.local/hangd/data_vtx/reid_dataset/uet_reid', type=str)
     # parser.add_argument("--data-dir", default='/data.local/hangd/data_vtx/toy_data/toy_reid_dataset/reid_dataset', type=str)
     parser.add_argument("--no-cuda", action="store_true")
     parser.add_argument("--gpu-id", default=1, type=int)
     parser.add_argument("--ckpt", default="./checkpoint/ckpt.t7", type=str)
     parser.add_argument("--batch", default=16, type=int)
     parser.add_argument("--save-path", default="predicts/debug.pth", type=str)
+    parser.add_argument("--save-dir", default="predicts/", type=str)
+    parser.add_argument("--save-name", default="debug.pth", type=str)
     parser.add_argument("--device", default=1, type=int)
 
     args = parser.parse_args()
@@ -231,8 +236,36 @@ if __name__ == '__main__':
     if torch.cuda.is_available() and not args.no_cuda:
         cudnn.benchmark = True
 
+    # data loading
+    root = args.data_dir
+    train_dir = os.path.join(root, "train")
+    # test_dir = os.path.join(root, "test")
+
+    # test on gallery folder
+    test_dir = os.path.join(root, "gallery")
+
+    trainloader = torch.utils.data.DataLoader(
+        ImageFolderWithPaths(train_dir, transform=None),
+            batch_size=args.batch, shuffle=True
+    )
+    testloader = torch.utils.data.DataLoader(
+        ImageFolderWithPaths(test_dir, transform=None),
+        batch_size=args.batch, shuffle=True
+    )
+
+    num_classes = max(len(trainloader.dataset.classes),
+                    len(testloader.dataset.classes))
+
+
+
+    print("Num class:", num_classes)
+
+    # to test on old model
+    num_classes=868
+
     # define net 
-    net = Net(reid=True)
+    net = Net(reid=True, num_classes=num_classes)
+
 
     assert os.path.isfile(
     args.ckpt), "Error: no checkpoint file found!"
@@ -245,7 +278,7 @@ if __name__ == '__main__':
 
     net.load_state_dict(net_dict, strict=False)    
 
-    calculate_features(net = net, root_dir = args.data_dir, batch = args.batch, device=device, save_path=args.save_path)
+    calculate_features(net = net, root_dir = args.data_dir, batch = args.batch, device=device, save_dir=args.save_dir, save_name=args.save_name)
 
 
 

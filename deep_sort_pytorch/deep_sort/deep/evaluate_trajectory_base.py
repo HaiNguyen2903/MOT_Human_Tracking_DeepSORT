@@ -35,6 +35,8 @@ def get_trajectory_bounds(gl, gallery_paths, limit=100):
     for i in range(gl.size(0)):
         pid = gl[i].item()
 
+        print('Getting start and end frame for trajectory of id {}'.format(pid))
+
         gframe = get_frame_index(gallery_paths[i])
 
         if pid not in trajectory_bounds:
@@ -151,7 +153,7 @@ def calculate_rank_1(features):
     mean_top1_acc = (mean_top1_acc / len(features)) 
 
     # print("Accuracy top 1: {:.3f}".format(top1correct / ql.size(0)))
-    print("Accuracy top 1: {:.5f}".format(mean_top1_acc))
+    print("Accuracy top 1: {:.3f}".format(mean_top1_acc*100))
     return mean_top1_acc
 
 
@@ -182,7 +184,7 @@ def calculate_precision_k(features, k):
         avg_acc += acc
 
     avg_acc = (avg_acc / len(features)) 
-    print('P@{}: {:.5f}'.format(k, avg_acc))
+    print('P@{}: {:.3f}'.format(k, avg_acc*100))
 
     return avg_acc
 
@@ -236,7 +238,7 @@ def calculate_mAP_n(features, n):
 
     mAP = (mAP / len(features)) 
     # print(pred_k.shape)
-    print('mAP@{}: {:.5f}'.format(n, mAP))
+    print('mAP@{}: {:.3f}'.format(n, mAP*100))
     return mAP
 
 

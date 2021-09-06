@@ -24,6 +24,17 @@ from IPython import embed
 
 palette = (2 ** 11 - 1, 2 ** 15 - 1, 2 ** 20 - 1)
 
+def mkdir_if_missing(path):
+    if not os.path.exists(path):
+        print('Make dir {}'.format(path))
+        os.makedirs(path)
+
+
+def get_model_num_classes(model_path):
+    model = torch.load(model_path)
+    return model['net_dict']['classifier.4.weight'].size(0)
+
+
 def xyxy_to_xywh(*xyxy):
     """" Calculates the relative bounding box from absolute pixel values. """
     bbox_left = min([xyxy[0].item(), xyxy[2].item()])
@@ -115,11 +126,17 @@ def detect(opt):
     cfg.merge_from_file(opt.config_deepsort)
     attempt_download(deep_sort_weights, repo='mikel-brostrom/Yolov5_DeepSort_Pytorch')
 
-    deepsort = DeepSort(cfg.DEEPSORT.REID_CKPT,
+    # deepsort = DeepSort(cfg.DEEPSORT.REID_CKPT,
+    #                     max_dist=cfg.DEEPSORT.MAX_DIST, min_confidence=cfg.DEEPSORT.MIN_CONFIDENCE,
+    #                     nms_max_overlap=cfg.DEEPSORT.NMS_MAX_OVERLAP, max_iou_distance=cfg.DEEPSORT.MAX_IOU_DISTANCE,
+    #                     max_age=cfg.DEEPSORT.MAX_AGE, n_init=cfg.DEEPSORT.N_INIT, nn_budget=cfg.DEEPSORT.NN_BUDGET,
+    #                     use_cuda=True, reid_classes=cfg.DEEPSORT.REID_CLASSES_DIM)
+
+    deepsort = DeepSort(opt.deep_sort_weights,
                         max_dist=cfg.DEEPSORT.MAX_DIST, min_confidence=cfg.DEEPSORT.MIN_CONFIDENCE,
                         nms_max_overlap=cfg.DEEPSORT.NMS_MAX_OVERLAP, max_iou_distance=cfg.DEEPSORT.MAX_IOU_DISTANCE,
                         max_age=cfg.DEEPSORT.MAX_AGE, n_init=cfg.DEEPSORT.N_INIT, nn_budget=cfg.DEEPSORT.NN_BUDGET,
-                        use_cuda=True, reid_classes=cfg.DEEPSORT.REID_CLASSES_DIM)
+                        use_cuda=True, reid_classes=get_model_num_classes(opt.deep_sort_weights))
 
     
     # Initialize

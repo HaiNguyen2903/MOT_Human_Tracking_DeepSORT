@@ -24,6 +24,15 @@ from IPython import embed
 palette = (2 ** 11 - 1, 2 ** 15 - 1, 2 ** 20 - 1)
 gt_path = '/data.local/all/hainp/yolov5_deep_sort/deep_sort_copy/track_dataset/gt.txt'
 
+def mkdir_if_missing(path):
+    if not os.path.exists(path):
+        print('Make dir {}'.format(path))
+        os.makedirs(path)
+
+def get_model_num_classes(model_path):
+    model = torch.load(model_path)
+    return model['net_dict']['classifier.4.weight'].size(0)
+
 def xyxy_to_xywh(*xyxy):
     """" Calculates the relative bounding box from absolute pixel values. """
     bbox_left = min([xyxy[0].item(), xyxy[2].item()])
@@ -102,16 +111,18 @@ def detect(opt):
     webcam = source == '0' or source.startswith(
         'rtsp') or source.startswith('http') or source.endswith('.txt')
 
+    mkdir_if_missing(out)
+
     # initialize deepsort
     cfg = get_config()
     cfg.merge_from_file(opt.config_deepsort)
     attempt_download(deep_sort_weights, repo='mikel-brostrom/Yolov5_DeepSort_Pytorch')
 
-    deepsort = DeepSort(cfg.DEEPSORT.REID_CKPT,
+    deepsort = DeepSort(opt.deep_sort_weights,
                         max_dist=cfg.DEEPSORT.MAX_DIST, min_confidence=cfg.DEEPSORT.MIN_CONFIDENCE,
                         nms_max_overlap=cfg.DEEPSORT.NMS_MAX_OVERLAP, max_iou_distance=cfg.DEEPSORT.MAX_IOU_DISTANCE,
                         max_age=cfg.DEEPSORT.MAX_AGE, n_init=cfg.DEEPSORT.N_INIT, nn_budget=cfg.DEEPSORT.NN_BUDGET,
-                        use_cuda=True, reid_classes=cfg.DEEPSORT.REID_CLASSES_DIM)
+                        use_cuda=True, reid_classes=get_model_num_classes(opt.deep_sort_weights))
 
     # deepsort = DeepSort(cfg.DEEPSORT.REID_CKPT,
     #                     max_dist=cfg.DEEPSORT.MAX_DIST, min_confidence=cfg.DEEPSORT.MIN_CONFIDENCE,
@@ -164,7 +175,7 @@ def detect(opt):
     # save_path = str(Path(out))
     save_folder = opt.output
     if not os.path.isdir(save_folder):
-        os.mkdir(save_folder)
+        os.mkdirs(save_folder)
 
     
     # save_path = opt.output
@@ -208,8 +219,12 @@ def detect(opt):
             # save_path = str(Path(out) / Path(p).name)
             # save_path = opt.output + '/' + 'test'
 
-            save_path = opt.output
-            vid_name = 'demo'
+            # save_path = opt.output
+
+            save_dir = opt.output
+
+            src_vid_path = opt.source
+            vid_name = os.path.basename(src_vid_path)[:-4]
 
             # print('det:', det)
             if det is not None and len(det):
@@ -258,8 +273,10 @@ def detect(opt):
                             bbox_h = tlwh_bbox[3]
                             identity = output[-1]
                             with open(txt_path, 'a') as f:
-                                f.write(('%g ' * 10 + '\n') % (frame_idx, identity, bbox_top,
-                                                            bbox_left, bbox_w, bbox_h, -1, -1, -1, -1))  # label format
+                                # f.write(('%g ' * 10 + '\n') % (frame_idx, identity, bbox_top,
+                                #                             bbox_left, bbox_w, bbox_h, -1, -1, -1, -1))  # label format
+                                f.write('{},{},{},{},{},{},-1,-1,-1,-1\n'.format(frame_idx, identity, bbox_top,
+                                                                                    bbox_left, bbox_w, bbox_h))
                 if(opt.mode == "gt"):
                     persons_inf = group_frame[frame_idx+1]
                     bbox_gt_xyxy = list(map(lambda x: x.xywh_to_xyxy(), persons_inf))
@@ -281,6 +298,8 @@ def detect(opt):
             # Save results (image with detections)
             if save_vid:
                 # embed(header='debug save video')
+                save_path = os.path.join(save_dir, vid_name + '.mp4')
+
                 if vid_path != save_path:  # new video
                     vid_path = save_path
                     if isinstance(vid_writer, cv2.VideoWriter):
@@ -290,14 +309,14 @@ def detect(opt):
                         w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                         h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-                        save_path += '.mp4'
+                        # save_path += '.mp4'
                         # save_vid_path = os.path.join(save_path, 'demo.mp4')
                         # print(save_vid_path)
                         # exit()
                     else:  # stream
                         fps, w, h = 30, im0.shape[1], im0.shape[0]
-                        save_path += '.mp4'
-                        save_vid_path = os.path.join(save_path, vid_name + '.mp4')
+                        # save_path += '.mp4'
+                        # save_vid_path = os.path.join(save_path, vid_name + '.mp4')
 
                     # vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                     vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
@@ -328,7 +347,7 @@ if __name__ == '__main__':
     # file/folder, 0 for webcam
     # parser.add_argument('--source', type=str, default='0', help='source')
     parser.add_argument('--source', type=str, default='/data.local/hangd/data_vtx/testing/NVR-CH07_S20210609-084936_E20210609-085153.mp4', help='source')
-    parser.add_argument('--output', type=str, default='/data.local/all/hainp/yolov5_deep_sort/deep_sort_copy/inference/demos', help='output folder')  # output folder
+    parser.add_argument('--output', type=str, default='/data.local/all/hainp/yolov5_deep_sort/deep_sort_copy/inference/detect_v3_reid_v8', help='output folder')  # output folder
     parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.4, help='object confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.5, help='IOU threshold for NMS')
