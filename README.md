@@ -331,7 +331,7 @@ However, this algorithm is almost similar as the 2th algorithm (base on query fr
 In `deep_sort_pytorch/deep_sort/deep`, run:
 
 ```bash
-python evaluate_tr_base.py --predict-path {path/to/saved/features/metric} --p_k {k in P@k evaluation} --mAP_n {n in mAP@n evaluation}
+python evaluate_trajectory_base.py --predict-path {path/to/saved/features/metric} --p_k {k in P@k evaluation} --mAP_n {n in mAP@n evaluation}
 ```
 
 Note that since each gallery is only in a limited number of frame, there can be some cases that the number of instances is smaller than `k` and `n` in `p@k` and `mAP@n` evaluation. However, it's quite rare because `k` and `n` is small (5 or 10). We can solve it easily by just ignore that gallery and reference query.
