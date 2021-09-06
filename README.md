@@ -326,7 +326,13 @@ In this algorithm, for each person id, we first find the first frame the id appe
 
 We then evaluate a query on a gallery with all instance from frame `start_trajectory_frame - range` to frame `end_trajectory_frame + range`, where `range` is a pre-defined number (we set range = 100 by default).
 
-However, this algorithm is almost similar as the 2th algorithm (base on query frame id).
+However, this algorithm is almost similar as the 2th algorithm (base on query frame id), but run quite slower.
+
+In `deep_sort_pytorch/deep_sort/deep`, run:
+
+```bash
+python evaluate_tr_base.py --predict-path {path/to/saved/features/metric} --p_k {k in P@k evaluation} --mAP_n {n in mAP@n evaluation}
+```
 
 Note that since each gallery is only in a limited number of frame, there can be some cases that the number of instances is smaller than `k` and `n` in `p@k` and `mAP@n` evaluation. However, it's quite rare because `k` and `n` is small (5 or 10). We can solve it easily by just ignore that gallery and reference query.
 
