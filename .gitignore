@@ -11,12 +11,13 @@ debug.ipynb
 deep_sort_pytorch/deep_sort/deep/checkpoint
 deep_sort_pytorch/deep_sort/deep/predicts
 deep_sort_pytorch/deep_sort/deep/training_curves
-deep_sort_pytorch/deep_sort/deep/inference
-deep_sort_pytorch/deep_sort/deep/inference_test
+deep_sort_pytorch/deep_sort/deep/inference*
+# deep_sort_pytorch/deep_sort/deep/inference_test
+# deep_sort_pytorch/deep_sort/deep/inference_new_model
 
 track_dataset
 generate_data/__pycache__/
-inference/
+inference_tracking/
 wandb/
 tools/wandb
 tools/artifacts
