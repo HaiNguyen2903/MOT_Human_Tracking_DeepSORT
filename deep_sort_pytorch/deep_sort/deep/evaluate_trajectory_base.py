@@ -6,6 +6,7 @@ import os
 import cv2
 import numpy as np
 from os import path as osp
+import json
 
 def get_frame_index(path):
     return int(os.path.basename(path)[:-4])
@@ -35,7 +36,7 @@ def get_trajectory_bounds(gl, gallery_paths, limit=100):
     for i in range(gl.size(0)):
         pid = gl[i].item()
 
-        print('Getting start and end frame for trajectory of id {}'.format(pid))
+        # print('Getting start and end frame for trajectory of id {}'.format(pid))
 
         gframe = get_frame_index(gallery_paths[i])
 
@@ -53,16 +54,30 @@ def get_trajectory_bounds(gl, gallery_paths, limit=100):
     return trajectory_bounds
 
 
+def get_pid_bound(test_json):
+    pid_bound = {}
 
-def collect_features(qf, ql, gf, gl, query_paths, gallery_paths, limit, min_frame):
+    with open(test_json) as json_file:
+        test_info = json.load(json_file)
+        for vid in test_info:
+            start_pid, end_pid = test_info[vid][0], test_info[vid][1]
+            for id in range(start_pid, end_pid + 1):
+                pid_bound[id] = [start_pid, end_pid]
+
+    return pid_bound
+
+
+def collect_features(qf, ql, gf, gl, query_paths, gallery_paths, limit, min_frame, test_json):
     print('Calculating features for each query ...') 
     print()
+
     # list of features for each query
     features = []
     # number of ignore cases (does not satisfy evaluation requirement)
     ignores = 0
 
     trajectory_bounds = get_trajectory_bounds(gl, gallery_paths, limit=limit)
+    pid_bounds = get_pid_bound(test_json)
 
     # for each query 
     for i in range(qf.size(0)):
@@ -94,6 +109,9 @@ def collect_features(qf, ql, gf, gl, query_paths, gallery_paths, limit, min_fram
         # upper_bound = min(gf.size(0), q_frame + limit)
         upper_bound = trajectory_bounds[pid]['upper_bound']
 
+        start_pid = pid_bounds[pid][0]
+        end_pid = pid_bounds[pid][1]
+
         ## check all instances in gallery that in range [lower_bound, upper_bound] and update
         # for i in range(gf.size(0)):
         #     g_path = gallery_paths[i]
@@ -106,13 +124,20 @@ def collect_features(qf, ql, gf, gl, query_paths, gallery_paths, limit, min_fram
         #         g_paths.append(gallery_paths[i])
 
         # using matrix for faster calculation with torch
+
+        # embed(header='debug collect features')
         g_paths = np.array([g_path for g_path in gallery_paths])
         g_frames = np.array([get_frame_index(g_path) for g_path in g_paths])
-        valid_idx = np.where((lower_bound <= g_frames) & (g_frames <= upper_bound))[0]
+        g_pids = np.array(gl)
+
+        valid_idx = np.where((lower_bound <= g_frames) & (g_frames <= upper_bound) & (start_pid <= g_pids) & (g_pids <= end_pid))[0]
+        
         g_features = gf[valid_idx]
         g_labels = gl[valid_idx]
         # filter path with valid idx
         g_paths = g_paths[valid_idx]
+
+        # print('query id: {}  gallery id: {}'.format(pid, g_labels))
 
         # check if a gallery is satisfy the requirement or not
         if len(g_paths) < min_frame:
@@ -299,6 +324,17 @@ def visualize_rank_k(features, output_dir, topk, width=128, height=256):
         # resize twice to ensure that the border width is consistent across images
         qimg = cv2.resize(qimg, (width, height))
 
+        q_frame = os.path.basename(query_paths[0])[:-4]
+        print('query frame: {}'.format(q_frame))
+
+        qimg = cv2.putText(img = qimg,
+                            text = q_frame,
+                            org = (10,25),
+                            fontFace = cv2.FONT_HERSHEY_DUPLEX,
+                            fontScale = 0.8,
+                            color = (255, 255, 0),
+                            thickness = 2)
+
         num_cols = topk + 1
         grid_img = 255 * np.ones(
             (
@@ -321,7 +357,12 @@ def visualize_rank_k(features, output_dir, topk, width=128, height=256):
 
         for j in range(len(matches)):
             border_color = GREEN if matches[j] else RED
-            gimg = cv2.imread(gallery_paths[indices[0][j].item()])
+
+            g_path = gallery_paths[indices[0][j].item()]
+            g_frame = os.path.basename(g_path)[:-4]
+            print('gallery frame: {}'.format(g_frame))
+
+            gimg = cv2.imread(g_path)
             gimg = cv2.resize(gimg, (width, height))
             gimg = cv2.copyMakeBorder(
                         gimg,
@@ -332,7 +373,17 @@ def visualize_rank_k(features, output_dir, topk, width=128, height=256):
                         cv2.BORDER_CONSTANT,
                         value=border_color
                     )
+
             gimg = cv2.resize(gimg, (width, height))
+
+            gimg = cv2.putText(img = gimg,
+                               text = g_frame,
+                               org = (10,25),
+                               fontFace = cv2.FONT_HERSHEY_DUPLEX,
+                               fontScale = 0.8,
+                               color = (255, 255, 0),
+                               thickness = 2)
+
             start = rank_idx*width + rank_idx*GRID_SPACING + QUERY_EXTRA_SPACING
             end = (
                 rank_idx+1
@@ -342,7 +393,8 @@ def visualize_rank_k(features, output_dir, topk, width=128, height=256):
             rank_idx += 1
             if rank_idx > topk:
                 break
-
+        
+        print()
     
         imname = os.path.basename(query_paths[0])[:-4]
         cv2.imwrite(os.path.join(output_dir, str(pid), imname + '.jpg'), grid_img)
@@ -352,7 +404,7 @@ def visualize_rank_k(features, output_dir, topk, width=128, height=256):
     print('Successfully saving inference images.')
 
 
-def evaluate(features, p_k, mAP_n, range, show = False, visualize_topk=5, infer_dir = None):
+def evaluate(features, p_k, mAP_n, range, show = False, visualize_topk=5, infer_dir = None, test_json=None):
     '''
     gf: query frames: shape (frames x features_len) (208 x 512)
     ql: query labels: vector len = number of query images
@@ -375,7 +427,7 @@ def evaluate(features, p_k, mAP_n, range, show = False, visualize_topk=5, infer_
         min_frame = max(p_k, mAP_n)
 
     # calculate feature base on 
-    feat_list, ignores = collect_features(qf, ql, gf, gl, query_paths, gallery_paths, limit=range, min_frame=min_frame)
+    feat_list, ignores = collect_features(qf, ql, gf, gl, query_paths, gallery_paths, limit=range, min_frame=min_frame, test_json=test_json)
 
     acc_top1 = calculate_rank_1(feat_list)
     precision_k = calculate_precision_k(feat_list, p_k)
@@ -401,7 +453,16 @@ if __name__ == '__main__':
     parser.add_argument("--visualize_top_k", default=10, type=int)
     parser.add_argument("--inference_dir", default = "inference_test", type=str)
 
+    parser.add_argument("--train_json", default='/data.local/hangd/human_tracking/ALL_SCRIPTS/generate_reid_data/uet_reid/train_video_infos.json', type=str)
+    parser.add_argument("--test_json", default='/data.local/hangd/human_tracking/ALL_SCRIPTS/generate_reid_data/uet_reid/test_video_infos.json', type=str)
+
     args = parser.parse_args()
+
+    # train_info = json.loads(args.train_json)
+    # with open(args.train_json) as json_file:
+    #     data = json.load(json_file)
+
+    #     embed()
 
     features = torch.load(args.predict_path)
 
@@ -411,5 +472,6 @@ if __name__ == '__main__':
             range = args.range,
             show = args.show,
             visualize_topk = args.visualize_top_k,
-            infer_dir = args.inference_dir)
+            infer_dir = args.inference_dir,
+            test_json=args.test_json)
     

@@ -20,7 +20,7 @@ import evaluate as eval_default
 
 parser = argparse.ArgumentParser(description="Train on market1501")
 # parser.add_argument("--data-dir", default='data', type=str)
-parser.add_argument("--data-dir", default='/data.local/hangd/data_vtx/reid_dataset/uet_reid', type=str)
+parser.add_argument("--data-dir", default='/data.local/hangd/human_tracking/ALL_SCRIPTS/generate_reid_data/uet_reid', type=str)
 # parser.add_argument("--data-dir", default='/data.local/hangd/data_vtx/toy_data/toy_reid_dataset/reid_dataset', type=str)
 parser.add_argument("--no-cuda", action="store_true")
 parser.add_argument("--gpu-id", default=0, type=int)
@@ -30,13 +30,14 @@ parser.add_argument("--interval", '-i', default=20, type=int)
 parser.add_argument('--resume', '-r', action='store_true')
 parser.add_argument('--ckpt', default = './checkpoint/ckpt.t7', type=str)
 parser.add_argument('--epochs', default=30, type=int)
-parser.add_argument('--batch', default=16, type=int)
+parser.add_argument('--batch', default=64, type=int)
 # parser.add_argument('--save-ckpt-path', default='checkpoint/debug.t7', type=str)
 parser.add_argument('--save-dir', default='checkpoint', type=str)
 parser.add_argument('--ckpt-name', default='debug', type=str)
 parser.add_argument('--save-result', default='training_curves/train.jpg', type=str)
 parser.add_argument('--project-name', default='Reid_Deepsort', type=str)
 parser.add_argument('--run-name', default='new_run', type=str)
+parser.add_argument("--test_json", default='/data.local/hangd/human_tracking/ALL_SCRIPTS/generate_reid_data/uet_reid/test_video_infos.json', type=str)
 
 args = parser.parse_args()
 
@@ -44,7 +45,7 @@ args = parser.parse_args()
 # device = "cuda:{}".format(
 #     args.gpu_id) if torch.cuda.is_available() and not args.no_cuda else "cpu"
 
-device = torch.device(1)
+device = torch.device(args.gpu_id)
 
 
 if torch.cuda.is_available() and not args.no_cuda:
@@ -98,50 +99,6 @@ num_classes = max(len(trainloader.dataset.classes),
 print("Num class:", num_classes)
 # net definition
 
-'''
-Creating gallery labels for custom test after each epoch
-================================================
-'''
-# gallery_features = torch.tensor([]).float()
-# gallery_labels = torch.tensor([]).long()
-# gallery_paths = []
-
-# train_labels = torch.tensor([]).long()
-# train_paths = []
-
-# with torch.no_grad():
-    
-#     # embed(header='query')
-
-#     for idx, (inputs, labels, path) in enumerate(testloader):
-#         gallery_labels = torch.cat((gallery_labels, labels))
-#         gallery_paths.extend(path)
-
-#     for idx, (inputs, labels, path) in enumerate(trainloader):
-#         train_labels = torch.cat((train_labels, labels))
-#         train_paths.extend(path)
-
-# embed(header='debug testloader')
-
-# # tensor([41,  2,  1,  2, 39, 23, 22, 30,  1,  2])
-# '''
-# ['/data.local/hangd/data_vtx/toy_data/toy_reid_dataset/reid_dataset/train/47/637.jpg',
-#  '/data.local/hangd/data_vtx/toy_data/toy_reid_dataset/reid_dataset/train/11/837.jpg',
-#  '/data.local/hangd/data_vtx/toy_data/toy_reid_dataset/reid_dataset/train/10/334.jpg',
-#  '/data.local/hangd/data_vtx/toy_data/toy_reid_dataset/reid_dataset/train/11/863.jpg',
-#  '/data.local/hangd/data_vtx/toy_data/toy_reid_dataset/reid_dataset/train/45/528.jpg',
-#  '/data.local/hangd/data_vtx/toy_data/toy_reid_dataset/reid_dataset/train/30/278.jpg',
-#  '/data.local/hangd/data_vtx/toy_data/toy_reid_dataset/reid_dataset/train/3/61.jpg',
-#  '/data.local/hangd/data_vtx/toy_data/toy_reid_dataset/reid_dataset/train/37/1102.jpg',
-#  '/data.local/hangd/data_vtx/toy_data/toy_reid_dataset/reid_dataset/train/10/1011.jpg',
-#  '/data.local/hangd/data_vtx/toy_data/toy_reid_dataset/reid_dataset/train/11/630.jpg']
-# '''
-
-
-'''
-=================================================
-'''
-
 start_epoch = 0
 net = Net(num_classes=num_classes)
 
@@ -170,6 +127,10 @@ best_acc = 0.
 best_mAP_default = 0.
 best_mAP_tb = 0.
 best_mAP_fb = 0.
+
+best_acc_top1_default = 0.
+best_acc_top1_tb = 0.
+best_acc_top1_fb = 0.
 
 
 # train function for each epoch
@@ -243,6 +204,10 @@ def eval_epoch(epoch):
     global best_mAP_tb
     global best_mAP_fb
 
+    global best_acc_top1_default
+    global best_acc_top1_tb
+    global best_acc_top1_fb
+
     # only use embedding part, ignore classify layers
     state_dict = net.state_dict()
     reid_net = Net(num_classes=num_classes, reid=True)
@@ -266,13 +231,15 @@ def eval_epoch(epoch):
                                                             p_k = 5,
                                                             mAP_n = 5,
                                                             range = 100,
-                                                            show = False)
+                                                            show = False,
+                                                            test_json=args.test_json)
 
     acc_top1_fb, precision_k_fb, mAP_fb = eval_fb.evaluate(features = features,
                                                                 p_k = 5,
                                                                 mAP_n = 5,
                                                                 range = 100,
-                                                                show = False)
+                                                                show = False,
+                                                                test_json=args.test_json)
 
     print()
     print('Testing on whole gallery')
@@ -291,12 +258,12 @@ def eval_epoch(epoch):
     if mAP_default > best_mAP_default:
         best_mAP_default = mAP_default
 
-        save_path = os.path.join(args.save_dir, args.ckpt_name + '_eval_default.t7')
+        save_path = os.path.join(args.save_dir, args.ckpt_name + '_eval_default_new.t7')
 
         print("Saving parameters to {}".format(save_path))
         checkpoint = {
             'net_dict': net.state_dict(),
-            'acc': 0,
+            'acc': acc_top1_default,
             'epoch': epoch,
             'mAP': best_mAP_default,
             'num_classes': num_classes
@@ -310,12 +277,12 @@ def eval_epoch(epoch):
     if mAP_tb > best_mAP_tb:
         best_mAP_tb = mAP_tb
 
-        save_path = os.path.join(args.save_dir, args.ckpt_name + '_eval_trajectory.t7')
+        save_path = os.path.join(args.save_dir, args.ckpt_name + '_eval_trajectory_new.t7')
 
         print("Saving parameters to {}".format(save_path))
         checkpoint = {
             'net_dict': net.state_dict(),
-            'acc': 0,
+            'acc': acc_top1_tb,
             'epoch': epoch,
             'mAP': best_mAP_tb,
             'num_classes': num_classes
@@ -329,14 +296,72 @@ def eval_epoch(epoch):
     if mAP_fb > best_mAP_fb:
         best_mAP_fb = mAP_fb
 
-        save_path = os.path.join(args.save_dir, args.ckpt_name + '_eval_frame.t7')
+        save_path = os.path.join(args.save_dir, args.ckpt_name + '_eval_frame_new.t7')
 
         print("Saving parameters to {}".format(save_path))
         checkpoint = {
             'net_dict': net.state_dict(),
-            'acc': 0,
+            'acc': acc_top1_fb,
             'epoch': epoch,
             'mAP': best_mAP_fb,
+            'num_classes': num_classes
+        }
+
+        if not os.path.isdir(args.save_dir):
+            os.mkdir(args.save_dir)
+        torch.save(checkpoint, save_path)
+
+    
+
+    if acc_top1_default > best_acc_top1_default:
+        best_acc_top1_default = acc_top1_default
+
+        save_path = os.path.join(args.save_dir, args.ckpt_name + '_best_acc_eval_default.t7')
+
+        print("Saving parameters to {}".format(save_path))
+        checkpoint = {
+            'net_dict': net.state_dict(),
+            'acc': best_acc_top1_default,
+            'epoch': epoch,
+            'mAP': mAP_default,
+            'num_classes': num_classes
+        }
+
+        if not os.path.isdir(args.save_dir):
+            os.mkdir(args.save_dir)
+        torch.save(checkpoint, save_path)
+
+
+    if acc_top1_tb > best_acc_top1_tb:
+        best_acc_top1_tb = acc_top1_tb
+
+        save_path = os.path.join(args.save_dir, args.ckpt_name + '_best_acc_eval_trajectory.t7')
+
+        print("Saving parameters to {}".format(save_path))
+        checkpoint = {
+            'net_dict': net.state_dict(),
+            'acc': best_acc_top1_tb,
+            'epoch': epoch,
+            'mAP': mAP_tb,
+            'num_classes': num_classes
+        }
+
+        if not os.path.isdir(args.save_dir):
+            os.mkdir(args.save_dir)
+        torch.save(checkpoint, save_path)
+
+
+    if acc_top1_fb > best_acc_top1_fb:
+        best_acc_top1_fb = acc_top1_fb
+
+        save_path = os.path.join(args.save_dir, args.ckpt_name + '_best_acc_eval_frame.t7')
+
+        print("Saving parameters to {}".format(save_path))
+        checkpoint = {
+            'net_dict': net.state_dict(),
+            'acc': best_acc_top1_fb,
+            'epoch': epoch,
+            'mAP': mAP_fb,
             'num_classes': num_classes
         }
 

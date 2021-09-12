@@ -17,7 +17,7 @@ def calculate_rank_1(scores, features):
     # total equal values between ql and ql vectors
     top1correct = gl[res].eq(ql).sum().item()
     
-    print("Accuracy top 1: {:.5f}".format(top1correct / ql.size(0)))
+    print("Accuracy top 1: {:.5f}".format((top1correct / ql.size(0)) *100))
     return (top1correct / ql.size(0))
 
 
@@ -49,7 +49,7 @@ def calculate_precision_k(scores, features, k=5):
     # calculate average acc
     avg_acc = (avg_acc / ql.size(0)) 
 
-    print('P@{}: {:.5f}'.format(k, avg_acc))
+    print('P@{}: {:.5f}'.format(k, avg_acc*100))
     return avg_acc
 
 
@@ -107,7 +107,7 @@ def calculate_mAP_n(scores, features, n=5):
 
     mAP = (mAP / ql.size(0)) 
     # print(pred_k.shape)
-    print('mAP@{}: {:.5f}'.format(n, mAP))
+    print('mAP@{}: {:.5f}'.format(n, mAP*100))
     return mAP
 
 
@@ -154,6 +154,17 @@ def visualize_rank_k(scores, features, output_dir, width=128, height=256, topk=1
         # resize twice to ensure that the border width is consistent across images
         qimg = cv2.resize(qimg, (width, height))
 
+        q_frame = os.path.basename(query_paths[i])[:-4]
+        # print('query frame: {}'.format(q_frame))
+
+        qimg = cv2.putText(img = qimg,
+                            text = q_frame,
+                            org = (10,25),
+                            fontFace = cv2.FONT_HERSHEY_DUPLEX,
+                            fontScale = 0.8,
+                            color = (255, 255, 0),
+                            thickness = 2)
+
         num_cols = topk + 1
         grid_img = 255 * np.ones(
             (
@@ -188,6 +199,18 @@ def visualize_rank_k(scores, features, output_dir, width=128, height=256, topk=1
                         value=border_color
                     )
             gimg = cv2.resize(gimg, (width, height))
+
+            g_frame = os.path.basename(gallery_paths[indices[i][j].item()])[:-4]
+            # print('gallery frame: {}'.format(g_frame))
+
+            gimg = cv2.putText(img = gimg,
+                               text = g_frame,
+                               org = (10,25),
+                               fontFace = cv2.FONT_HERSHEY_DUPLEX,
+                               fontScale = 0.8,
+                               color = (255, 255, 0),
+                               thickness = 2)
+
             start = rank_idx*width + rank_idx*GRID_SPACING + QUERY_EXTRA_SPACING
             end = (
                 rank_idx+1
@@ -197,11 +220,9 @@ def visualize_rank_k(scores, features, output_dir, width=128, height=256, topk=1
             rank_idx += 1
             if rank_idx > topk:
                 break
-
     
         imname = os.path.basename(query_paths[i])[:-4]
         cv2.imwrite(os.path.join(output_dir, str(pid), imname + '.jpg'), grid_img)
-        print('Writing {}.jpg'.format(imname))
 
     print('Successfully.')
 

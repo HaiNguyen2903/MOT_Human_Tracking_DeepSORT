@@ -1,6 +1,6 @@
 import os
 
-root = '/data.local/hangd/data_vtx/DATA_ROOT/combine_dataset/TRAIN_DATASET/train'
+root = '/data.local/hangd/data_vtx/DATA_ROOT/combine_dataset/TRAIN_DATASET/test'
 for dir in os.listdir(root):
     if os.path.isdir(os.path.join(root,dir)):
         print(dir)

@@ -6,6 +6,7 @@ import os
 import cv2
 import numpy as np
 from os import path as osp
+import json
 
 
 def get_frame_index(path):
@@ -17,7 +18,20 @@ def get_dirname(path):
     return int(osp.base(dir_path))
 
 
-def collect_features(qf, ql, gf, gl, query_paths, gallery_paths, limit, min_frame):
+def get_pid_bound(test_json):
+    pid_bound = {}
+
+    with open(test_json) as json_file:
+        test_info = json.load(json_file)
+        for vid in test_info:
+            start_pid, end_pid = test_info[vid][0], test_info[vid][1]
+            for id in range(start_pid, end_pid + 1):
+                pid_bound[id] = [start_pid, end_pid]
+
+    return pid_bound
+
+
+def collect_features(qf, ql, gf, gl, query_paths, gallery_paths, limit, min_frame, test_json=None):
     print('Calculating features for each query ...') 
     print()
     # list of features for each query
@@ -33,8 +47,12 @@ def collect_features(qf, ql, gf, gl, query_paths, gallery_paths, limit, min_fram
         if gframe > max_frame:
             max_frame = gframe
 
+    pid_bounds = get_pid_bound(test_json)
+
     # for each query 
     for i in range(qf.size(0)):
+        pid = ql[i].item()
+
         # vector feature, label and path to image for each query
         q_feature = torch.tensor([]).float()
         q_label = torch.tensor([]).long()
@@ -61,10 +79,20 @@ def collect_features(qf, ql, gf, gl, query_paths, gallery_paths, limit, min_fram
         # upper_bound = min(gf.size(0), q_frame + limit)
         upper_bound = min(max_frame, q_frame + limit)
 
+        start_pid = pid_bounds[pid][0]
+        end_pid = pid_bounds[pid][1]
+
         # using matrix for faster calculation with torch
         g_paths = np.array([g_path for g_path in gallery_paths])
         g_frames = np.array([get_frame_index(g_path) for g_path in g_paths])
-        valid_idx = np.where((lower_bound <= g_frames) & (g_frames <= upper_bound))[0]
+        g_pids = np.array(gl)
+
+        valid_idx = np.where((lower_bound <= g_frames) & (g_frames <= upper_bound) & (start_pid <= g_pids) & (g_pids <= end_pid))[0]
+        
+        # g_paths = np.array([g_path for g_path in gallery_paths])
+        # g_frames = np.array([get_frame_index(g_path) for g_path in g_paths])
+        # valid_idx = np.where((lower_bound <= g_frames) & (g_frames <= upper_bound))[0]
+        
         g_features = gf[valid_idx]
         g_labels = gl[valid_idx]
         # filter path with valid idx
@@ -255,6 +283,17 @@ def visualize_rank_k(features, output_dir, topk, width=128, height=256):
         # resize twice to ensure that the border width is consistent across images
         qimg = cv2.resize(qimg, (width, height))
 
+        q_frame = os.path.basename(query_paths[0])[:-4]
+        # print('query frame: {}'.format(q_frame))
+
+        qimg = cv2.putText(img = qimg,
+                            text = q_frame,
+                            org = (10,25),
+                            fontFace = cv2.FONT_HERSHEY_DUPLEX,
+                            fontScale = 0.8,
+                            color = (255, 255, 0),
+                            thickness = 2)
+
         num_cols = topk + 1
         grid_img = 255 * np.ones(
             (
@@ -289,6 +328,17 @@ def visualize_rank_k(features, output_dir, topk, width=128, height=256):
                         value=border_color
                     )
             gimg = cv2.resize(gimg, (width, height))
+
+            g_frame = os.path.basename(gallery_paths[indices[0][j].item()])[:-4]
+
+            gimg = cv2.putText(img = gimg,
+                               text = g_frame,
+                               org = (10,25),
+                               fontFace = cv2.FONT_HERSHEY_DUPLEX,
+                               fontScale = 0.8,
+                               color = (255, 255, 0),
+                               thickness = 2)
+
             start = rank_idx*width + rank_idx*GRID_SPACING + QUERY_EXTRA_SPACING
             end = (
                 rank_idx+1
@@ -308,7 +358,7 @@ def visualize_rank_k(features, output_dir, topk, width=128, height=256):
     print('Successfully saving inference images.')
 
 
-def evaluate(features, p_k, mAP_n, range, show = False, visualize_topk=5, infer_dir = None):
+def evaluate(features, p_k, mAP_n, range, show = False, visualize_topk=5, infer_dir = None, test_json=None):
     '''
     gf: query frames: shape (frames x features_len) (208 x 512)
     ql: query labels: vector len = number of query images
@@ -331,7 +381,7 @@ def evaluate(features, p_k, mAP_n, range, show = False, visualize_topk=5, infer_
         min_frame = max(p_k, mAP_n)
 
     # calculate feature base on 
-    feat_list, ignores = collect_features(qf, ql, gf, gl, query_paths, gallery_paths, limit=range, min_frame=min_frame)
+    feat_list, ignores = collect_features(qf, ql, gf, gl, query_paths, gallery_paths, limit=range, min_frame=min_frame, test_json=test_json)
 
     acc_top1 = calculate_rank_1(feat_list)
     precision_k = calculate_precision_k(feat_list, p_k)
@@ -356,6 +406,9 @@ if __name__ == '__main__':
     parser.add_argument("--visualize_top_k", default=10, type=int)
     parser.add_argument("--inference_dir", default = "inference_test", type=str)
 
+    parser.add_argument("--train_json", default='/data.local/hangd/human_tracking/ALL_SCRIPTS/generate_reid_data/uet_reid/train_video_infos.json', type=str)
+    parser.add_argument("--test_json", default='/data.local/hangd/human_tracking/ALL_SCRIPTS/generate_reid_data/uet_reid/test_video_infos.json', type=str)
+
     args = parser.parse_args()
 
     features = torch.load(args.predict_path)
@@ -366,4 +419,5 @@ if __name__ == '__main__':
             range = args.range,
             show = args.show,
             visualize_topk = args.visualize_top_k,
-            infer_dir = args.inference_dir)
+            infer_dir = args.inference_dir,
+            test_json=args.test_json)

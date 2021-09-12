@@ -71,10 +71,10 @@ def calculate_features(net, root_dir, batch, device, save_features = True, save_
         print('Calculating embedding for gallery ...')
         for idx, (inputs, labels, paths) in enumerate(galleryloader):
             inputs = inputs.to(device)
-            start = time.time()
+            # start = time.time()
             features = net(inputs).cpu()
-            end = time.time()
-            print('Time for gallery batch {}: {}'.format(idx, end-start))
+            # end = time.time()
+            # print('Time for gallery batch {}: {}'.format(idx, end-start))
 
             gallery_features = torch.cat((gallery_features, features), dim=0)
             gallery_labels = torch.cat((gallery_labels, labels))
@@ -101,7 +101,8 @@ def calculate_features(net, root_dir, batch, device, save_features = True, save_
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Train on market1501")
-    parser.add_argument("--data-dir", default='/data.local/hangd/data_vtx/DATA_ROOT/combine_dataset/reid_dataset', type=str)
+    # parser.add_argument("--data-dir", default='/data.local/hangd/data_vtx/DATA_ROOT/combine_dataset/reid_dataset', type=str)
+    parser.add_argument("--data-dir", default='/data.local/hangd/human_tracking/ALL_SCRIPTS/generate_reid_data/uet_reid', type=str)
     # parser.add_argument("--data-dir", default='/data.local/hangd/data_vtx/reid_dataset/uet_reid', type=str)
     # parser.add_argument("--data-dir", default='/data.local/hangd/data_vtx/toy_data/toy_reid_dataset/reid_dataset', type=str)
     parser.add_argument("--no-cuda", action="store_true")
@@ -140,7 +141,9 @@ if __name__ == '__main__':
     num_classes = max(len(trainloader.dataset.classes),
                     len(testloader.dataset.classes))
 
+    checkpoint = torch.load(args.ckpt, map_location=device)
 
+    num_classes = 1359
 
     print("Num class:", num_classes)
 
@@ -155,8 +158,6 @@ if __name__ == '__main__':
     args.ckpt), "Error: no checkpoint file found!"
 
     print('Loading from {}'.format(args.ckpt))
-
-    checkpoint = torch.load(args.ckpt, map_location=device)
 
     net_dict = checkpoint['net_dict']
 
