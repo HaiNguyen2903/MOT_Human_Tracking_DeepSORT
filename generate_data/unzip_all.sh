@@ -1,4 +1,4 @@
-search_dir='/data.local/hangd/data_vtx/mot_annotations/annotation_CH06_reviewed'
+search_dir='/data.local/hangd/data_vtx/mot_annotations/annotationCH02_reviewed'
 
 for ann_path in "$search_dir"/*.zip
     do 
