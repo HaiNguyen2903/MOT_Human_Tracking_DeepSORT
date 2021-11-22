@@ -1,23 +1,18 @@
 .vscode/
-generate_data/reid_dataset
 yolov5/checkpoints
 yolov5/runs
 yolov5/wandb
-test_dataset
-combine_dataset
-reid_dataset
-debug.ipynb
 
 deep_sort_pytorch/deep_sort/deep/checkpoint
 deep_sort_pytorch/deep_sort/deep/predicts
-deep_sort_pytorch/deep_sort/deep/training_curves
-deep_sort_pytorch/deep_sort/deep/inference*
-# deep_sort_pytorch/deep_sort/deep/inference_test
-# deep_sort_pytorch/deep_sort/deep/inference_new_model
 
-track_dataset
-generate_data/__pycache__/
+deep_sort_pytorch/deep_sort/deep/inference*
+
 inference_tracking/
+
 wandb/
+
 tools/wandb
 tools/artifacts
+
+*/inference_reid_models/*

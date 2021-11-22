@@ -77,11 +77,12 @@ def collect_features(qf, ql, gf, gl, query_paths, gallery_paths, limit, min_fram
     ignores = 0
 
     trajectory_bounds = get_trajectory_bounds(gl, gallery_paths, limit=limit)
-    pid_bounds = get_pid_bound(test_json)
+    # pid_bounds = get_pid_bound(test_json)
 
     # for each query 
     for i in range(qf.size(0)):
         pid = ql[i].item()
+        print('pid {}'.format(pid))
 
         # vector feature, label and path to image for each query
         q_feature = torch.tensor([]).float()
@@ -109,8 +110,8 @@ def collect_features(qf, ql, gf, gl, query_paths, gallery_paths, limit, min_fram
         # upper_bound = min(gf.size(0), q_frame + limit)
         upper_bound = trajectory_bounds[pid]['upper_bound']
 
-        start_pid = pid_bounds[pid][0]
-        end_pid = pid_bounds[pid][1]
+        # start_pid = pid_bounds[pid][0]
+        # end_pid = pid_bounds[pid][1]
 
         ## check all instances in gallery that in range [lower_bound, upper_bound] and update
         # for i in range(gf.size(0)):
@@ -130,7 +131,7 @@ def collect_features(qf, ql, gf, gl, query_paths, gallery_paths, limit, min_fram
         g_frames = np.array([get_frame_index(g_path) for g_path in g_paths])
         g_pids = np.array(gl)
 
-        valid_idx = np.where((lower_bound <= g_frames) & (g_frames <= upper_bound) & (start_pid <= g_pids) & (g_pids <= end_pid))[0]
+        valid_idx = np.where((lower_bound <= g_frames) & (g_frames <= upper_bound))[0]
         
         g_features = gf[valid_idx]
         g_labels = gl[valid_idx]
@@ -156,6 +157,8 @@ def collect_features(qf, ql, gf, gl, query_paths, gallery_paths, limit, min_fram
 
         features.append(feat)
 
+        del feat, q_feature, q_label, g_features, g_labels, q_path, g_paths
+        torch.cuda.empty_cache()
     # embed(header='debug collect features')
 
     return features, ignores
@@ -325,7 +328,6 @@ def visualize_rank_k(features, output_dir, topk, width=128, height=256):
         qimg = cv2.resize(qimg, (width, height))
 
         q_frame = os.path.basename(query_paths[0])[:-4]
-        print('query frame: {}'.format(q_frame))
 
         qimg = cv2.putText(img = qimg,
                             text = q_frame,
@@ -456,7 +458,8 @@ if __name__ == '__main__':
     parser.add_argument("--train_json", default='/data.local/hangd/human_tracking/ALL_SCRIPTS/generate_reid_data/uet_reid/train_video_infos.json', type=str)
     # parser.add_argument("--test_json", default='/data.local/hangd/human_tracking/ALL_SCRIPTS/generate_reid_data/uet_reid/test_video_infos.json', type=str)
     parser.add_argument("--test_json", default='/data/DATA_ROOT/uet_reid/test_video_infos.json', type=str)
-   
+    parser.add_argument("--inference_debug", default = "inference_debug", type=str)
+
     args = parser.parse_args()
 
     # train_info = json.loads(args.train_json)

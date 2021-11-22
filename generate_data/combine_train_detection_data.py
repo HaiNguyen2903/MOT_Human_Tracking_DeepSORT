@@ -1,5 +1,5 @@
 import os 
-from os import path as osp
+from os import makedirs, path as osp
 import shutil
 
 '''
@@ -9,12 +9,19 @@ This file combine frames data from multi folders to generate 1 unique training d
 # root_frames_dir = '/data.local/hangd/data_vtx/frames_data'
 # root_labels_dir = '/data.local/hangd/data_vtx/labels_yolo_format'
 
-root_frames_dir = '/data.local/hangd/human_tracking/fairmot_human_tracking/dataset/UET_MOT_dataversion3+4/images'
-root_labels_dir = '/data.local/hangd/data_vtx/DATA_ROOT/combine_dataset_v3/detection_dataset/labels_by_vids'
 
-combine_frames_dir = '/data.local/hangd/data_vtx/DATA_ROOT/combine_dataset_v3/detection_dataset/images'
-combine_labels_dir = '/data.local/hangd/data_vtx/DATA_ROOT/combine_dataset_v3/detection_dataset/labels'
+# root_frames_dir = '/data.local/hangd/human_tracking/fairmot_human_tracking/dataset/UET_MOT_dataversion3+4/images'
+# root_labels_dir = '/data.local/hangd/data_vtx/DATA_ROOT/combine_dataset_v3/detection_dataset/labels_by_vids'
 
+# combine_frames_dir = '/data.local/hangd/data_vtx/DATA_ROOT/combine_dataset_v3/detection_dataset/images'
+# combine_labels_dir = '/data.local/hangd/data_vtx/DATA_ROOT/combine_dataset_v3/detection_dataset/labels'
+
+
+root_frames_dir = '/data/DATA_ROOT/combine_dataset_v5/UET_MOT/images'
+root_labels_dir = '/data/DATA_ROOT/combine_dataset_v5/detection_dataset/labels_yolov5_format'
+
+combine_frames_dir = '/data/DATA_ROOT/combine_dataset_v5/detection_dataset/images'
+combine_labels_dir = '/data/DATA_ROOT/combine_dataset_v5/detection_dataset/labels'
 
 current_frame = 0 
 
@@ -26,8 +33,14 @@ def mkdir_if_missing(full_path):
         print('Create dir {}'.format(full_path))
         os.makedirs(full_path)
 
+mkdir_if_missing(os.path.join(combine_frames_dir))
+mkdir_if_missing(os.path.join(combine_labels_dir))
+
 mkdir_if_missing(os.path.join(combine_frames_dir, 'train'))
 mkdir_if_missing(os.path.join(combine_labels_dir, 'train'))
+
+mkdir_if_missing(os.path.join(combine_frames_dir, 'val'))
+mkdir_if_missing(os.path.join(combine_labels_dir, 'val'))
 
 mkdir_if_missing(os.path.join(combine_frames_dir, 'test'))
 mkdir_if_missing(os.path.join(combine_labels_dir, 'test'))
@@ -73,13 +86,68 @@ def combine_symlink(root_frames_dir, root_labels_dir, combine_frames_dir, combin
 
     train_names = [name for name in sorted(os.listdir(os.path.join(root_frames_dir, 'train')))]
     test_names = [name for name in sorted(os.listdir(os.path.join(root_frames_dir, 'test')))]
+    val_names = [name for name in sorted(os.listdir(os.path.join(root_frames_dir, 'val')))]
 
     # print(train_names)
     # print()
     # print(test_names)
 
     vid_idx = 1
+
+
+
     
+
+    # for name in val_names:
+
+    #     frames_src_dir = os.path.join(root_frames_dir, 'val', name, 'img1')
+    #     labels_src_dir = os.path.join(root_labels_dir, 'val', name, 'img1')
+
+    #     frames_dest_dir = os.path.join(combine_frames_dir, 'val')
+    #     labels_dest_dir = os.path.join(combine_labels_dir, 'val')
+
+    #     mkdir_if_missing(frames_dest_dir)
+    #     mkdir_if_missing(labels_dest_dir)
+
+    #     # frame_len = len(os.listdir(frames_src_dir))
+    #     # label_len = len(os.listdir(labels_src_dir))
+
+    #     # handle_missing_files(frames_src_dir, labels_src_dir)
+
+    #     # assert frame_len == label_len, "Frame len: {} \t Label len: {}".format(frame_len, label_len)
+
+    #     for frame in sorted(os.listdir(frames_src_dir)):
+    #         # id = int(frame[:-4].split('_')[1]) + current_frame
+
+    #         # try:
+    #         if os.path.exists(os.path.join(labels_src_dir, frame[:-3] + 'txt')):
+    #             print(os.path.join(labels_src_dir, frame[:-3] + 'txt'))
+    #             os.symlink(os.path.join(frames_src_dir, frame), os.path.join(frames_dest_dir, 'frame_{:07d}.jpg'.format(current_frame)))
+    #             os.symlink(os.path.join(labels_src_dir, frame[:-3] + 'txt'), os.path.join(labels_dest_dir, 'frame_{:07d}.txt'.format(current_frame)))
+
+    #             current_frame += 1
+
+    #             print('Generate from {} of video {} to frame {} for val video number {}'.format(frame[:-4], name, current_frame, vid_idx))
+            
+    #         # except:
+    #         #     print('Ignore frame {} for val video number {}'.format(current_frame, vid_idx))
+
+            
+    #     frame_len = len(os.listdir(frames_dest_dir))
+
+    #     # current_frame += int(frame_len * 2) 
+    #     # current_frame += frame_len+1    
+        
+    #     vid_idx += 1
+
+    # assert len(os.listdir(frames_dest_dir)) == len(os.listdir(labels_dest_dir))
+
+    # print('success')
+    # exit()
+
+
+
+
     for name in train_names:
 
         frames_src_dir = os.path.join(root_frames_dir, 'train', name, 'img1')
@@ -102,18 +170,22 @@ def combine_symlink(root_frames_dir, root_labels_dir, combine_frames_dir, combin
             id = int(frame[:-4].split('_')[1]) + current_frame
 
             try:
-                os.symlink(os.path.join(labels_src_dir, frame[:-3] + 'txt'), os.path.join(labels_dest_dir, 'frame_{:07d}.txt'.format(id)))
-                os.symlink(os.path.join(frames_src_dir, frame), os.path.join(frames_dest_dir, 'frame_{:07d}.jpg'.format(id)))
-                
-                print('Generate frame {} for train video number {}'.format(id, vid_idx))
+                if os.path.exists(os.path.join(labels_src_dir, frame[:-3] + 'txt')):
+                    os.symlink(os.path.join(frames_src_dir, frame), os.path.join(frames_dest_dir, 'frame_{:07d}.jpg'.format(current_frame)))
+                    os.symlink(os.path.join(labels_src_dir, frame[:-3] + 'txt'), os.path.join(labels_dest_dir, 'frame_{:07d}.txt'.format(current_frame)))
 
+                    current_frame += 1
+
+                    print('Generate frame {} for train video number {}'.format(id, vid_idx))
             except:
-                print('Already generated frame {} for test video number {} or missing gt'.format(id, vid_idx))
+                # print('Ignore frame {} for train video number {}'.format(id, vid_idx))
+                print(os.path.join(labels_src_dir, frame[:-3] + 'txt'), os.path.join(labels_dest_dir, 'frame_{:07d}.txt'.format(current_frame)))
+                exit()
 
         frame_len = len(os.listdir(frames_dest_dir))
 
-        current_frame += int(frame_len * 2) 
 
+        # current_frame += int(frame_len * 2) 
         # current_frame += frame_len+1
         vid_idx += 1
 
@@ -146,20 +218,71 @@ def combine_symlink(root_frames_dir, root_labels_dir, combine_frames_dir, combin
             id = int(frame[:-4].split('_')[1]) + current_frame
 
             try:
-                os.symlink(os.path.join(labels_src_dir, frame[:-3] + 'txt'), os.path.join(labels_dest_dir, 'frame_{:07d}.txt'.format(id)))
-                os.symlink(os.path.join(frames_src_dir, frame), os.path.join(frames_dest_dir, 'frame_{:07d}.jpg'.format(id)))
-                
-                print('Generate frame {} for test video number {}'.format(id, vid_idx))
+                if os.path.exists(os.path.join(labels_src_dir, frame[:-3] + 'txt')):
+                    os.symlink(os.path.join(frames_src_dir, frame), os.path.join(frames_dest_dir, 'frame_{:07d}.jpg'.format(current_frame)))
+                    os.symlink(os.path.join(labels_src_dir, frame[:-3] + 'txt'), os.path.join(labels_dest_dir, 'frame_{:07d}.txt'.format(current_frame)))
+
+                    current_frame += 1
+
+                    print('Generate frame {} for test video number {}'.format(id, vid_idx))
             except:
-                print('Already generated frame {} for test video number {}'.format(id, vid_idx))
+                print('Ignore frame {} for test video number {}'.format(id, vid_idx))
             
         frame_len = len(os.listdir(frames_dest_dir))
 
-        current_frame += int(frame_len * 2) 
+        # current_frame += int(frame_len * 2) 
         # current_frame += frame_len+1    
         vid_idx += 1
 
     assert len(os.listdir(frames_dest_dir)) == len(os.listdir(labels_dest_dir))
+
+
+    # reset to 0
+    current_frame = 0
+
+    vid_idx = 1
+
+    for name in val_names:
+
+        frames_src_dir = os.path.join(root_frames_dir, 'val', name, 'img1')
+        labels_src_dir = os.path.join(root_labels_dir, 'val', name)
+
+        frames_dest_dir = os.path.join(combine_frames_dir, 'val')
+        labels_dest_dir = os.path.join(combine_labels_dir, 'val')
+
+        mkdir_if_missing(frames_dest_dir)
+        mkdir_if_missing(labels_dest_dir)
+
+        # frame_len = len(os.listdir(frames_src_dir))
+        # label_len = len(os.listdir(labels_src_dir))
+
+        # handle_missing_files(frames_src_dir, labels_src_dir)
+
+        # assert frame_len == label_len, "Frame len: {} \t Label len: {}".format(frame_len, label_len)
+
+        for frame in sorted(os.listdir(frames_src_dir)):
+            id = int(frame[:-4].split('_')[1]) + current_frame
+
+            try:
+                if os.path.exists(os.path.join(labels_src_dir, frame[:-3] + 'txt')):
+                    os.symlink(os.path.join(frames_src_dir, frame), os.path.join(frames_dest_dir, 'frame_{:07d}.jpg'.format(current_frame)))
+                    os.symlink(os.path.join(labels_src_dir, frame[:-3] + 'txt'), os.path.join(labels_dest_dir, 'frame_{:07d}.txt'.format(current_frame)))
+
+                    current_frame += 1
+
+                    print('Generate frame {} for val video number {}'.format(id, vid_idx))
+            except:
+                print('Ignore frame {} for val video number {}'.format(id, vid_idx))
+            
+        frame_len = len(os.listdir(frames_dest_dir))
+
+        # current_frame += int(frame_len * 2) 
+        # current_frame += frame_len+1    
+        
+        vid_idx += 1
+
+    assert len(os.listdir(frames_dest_dir)) == len(os.listdir(labels_dest_dir))
+
 
 def cal_total_files(dir):
     count = 0
@@ -177,9 +300,12 @@ print('Successed.')
 
 print('Total train frames:', len(os.listdir(os.path.join(combine_frames_dir, 'train'))))
 print('Total test frames:', len(os.listdir(os.path.join(combine_frames_dir, 'test'))))
+print('Total test frames:', len(os.listdir(os.path.join(combine_frames_dir, 'val'))))
 
 print(cal_total_files(osp.join(root_frames_dir, 'train')))
 print(cal_total_files(osp.join(root_frames_dir, 'test')))
+print(cal_total_files(osp.join(root_frames_dir, 'val')))
+
 
 # assert os.path.isdir(root_frames_dir)
 # assert os.path.isdir(root_labels_dir)

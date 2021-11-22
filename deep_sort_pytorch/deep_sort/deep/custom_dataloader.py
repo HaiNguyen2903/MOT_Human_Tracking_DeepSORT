@@ -1,6 +1,6 @@
 import torch
 from torchvision import datasets
-from IPython import embed
+# from IPython import embed
 import os
 
 class ImageFolderWithPaths(datasets.ImageFolder):

@@ -1,9 +1,10 @@
 import torch
-from IPython import embed
+# from IPython import embed
 import argparse
 import os
 import cv2
 import numpy as np
+import json
 
 def calculate_rank_1(scores, features):
     qf = features["qf"]
@@ -124,7 +125,7 @@ RED = (0, 0, 255)
 def mkdir_if_missing(path):
     if not os.path.exists(path):
         print('Make dir {}'.format(path))
-        os.mkdir(path)
+        os.makedirs(path)
 
 
 def visualize_rank_k(scores, features, output_dir, width=128, height=256, topk=10):
@@ -137,6 +138,8 @@ def visualize_rank_k(scores, features, output_dir, width=128, height=256, topk=1
     gallery_paths = features['gallery_paths']
 
     mkdir_if_missing(output_dir)
+
+    frame_dist = {}
 
     # return vector of index in scores metric that have highest score for each query: len = query frame
     indices = scores.topk(topk, dim=1)[1]
@@ -156,6 +159,7 @@ def visualize_rank_k(scores, features, output_dir, width=128, height=256, topk=1
 
         q_frame = os.path.basename(query_paths[i])[:-4]
         # print('query frame: {}'.format(q_frame))
+        max_dist = 0
 
         qimg = cv2.putText(img = qimg,
                             text = q_frame,
@@ -211,6 +215,12 @@ def visualize_rank_k(scores, features, output_dir, width=128, height=256, topk=1
                                color = (255, 255, 0),
                                thickness = 2)
 
+            # save json file
+            dist = abs(int(g_frame) - int(q_frame))
+            if dist > max_dist:
+                max_dist = dist
+                frame_dist[str(pid)] = max_dist
+
             start = rank_idx*width + rank_idx*GRID_SPACING + QUERY_EXTRA_SPACING
             end = (
                 rank_idx+1
@@ -224,6 +234,17 @@ def visualize_rank_k(scores, features, output_dir, width=128, height=256, topk=1
         imname = os.path.basename(query_paths[i])[:-4]
         cv2.imwrite(os.path.join(output_dir, str(pid), imname + '.jpg'), grid_img)
 
+
+        if max_dist >= args.thres:
+            print(pid, max_dist, args.thres)
+            mkdir_if_missing(os.path.join(args.inference_debug, str(pid)))
+            cv2.imwrite(os.path.join(args.inference_debug, str(pid), imname + '.jpg'), grid_img)
+
+
+
+    with open('frame_distances.json', 'w') as f:
+        json.dump(frame_dist, f)
+    
     print('Successfully.')
 
 
@@ -250,7 +271,6 @@ def evaluate(features, p_k, mAP_n, range, show = False, visualize_topk=5, infer_
 
 
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Train on market1501")
     parser.add_argument("--predict_path", default='predicts/features_new.pth', type=str)
@@ -259,6 +279,8 @@ if __name__ == '__main__':
     parser.add_argument("--show", action='store_true')
     parser.add_argument("--visualize_top_k", default=10, type=int)
     parser.add_argument("--inference_dir", default = "inference_test", type=str)
+    parser.add_argument("--thres", default = 300, type=int)
+    parser.add_argument("--inference_debug", default = "inference_debug", type=str)
 
     args = parser.parse_args()
 

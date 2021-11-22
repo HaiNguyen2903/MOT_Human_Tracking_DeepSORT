@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import torch
 import torch.backends.cudnn as cudnn
 import torchvision
-from IPython import embed
+# from IPython import embed
 from model import Net
 from custom_dataloader import *
 import wandb
@@ -32,7 +32,7 @@ parser.add_argument('--ckpt', default = './checkpoint/ckpt.t7', type=str)
 parser.add_argument('--epochs', default=30, type=int)
 parser.add_argument('--batch', default=64, type=int)
 # parser.add_argument('--save-ckpt-path', default='checkpoint/debug.t7', type=str)
-parser.add_argument('--save-dir', default='checkpoint', type=str)
+parser.add_argument('--save-dir', default='checkpoint/cbdatav3', type=str)
 parser.add_argument('--ckpt-name', default='debug', type=str)
 parser.add_argument('--save-result', default='training_curves/train.jpg', type=str)
 parser.add_argument('--project-name', default='Reid_Deepsort', type=str)
@@ -258,7 +258,7 @@ def eval_epoch(epoch):
     if mAP_default > best_mAP_default:
         best_mAP_default = mAP_default
 
-        save_path = os.path.join(args.save_dir, args.ckpt_name + '_eval_default_new.t7')
+        save_path = os.path.join(args.save_dir, args.ckpt_name + '_eval_default.t7')
 
         print("Saving parameters to {}".format(save_path))
         checkpoint = {
@@ -277,7 +277,7 @@ def eval_epoch(epoch):
     if mAP_tb > best_mAP_tb:
         best_mAP_tb = mAP_tb
 
-        save_path = os.path.join(args.save_dir, args.ckpt_name + '_eval_trajectory_new.t7')
+        save_path = os.path.join(args.save_dir, args.ckpt_name + '_eval_trajectory.t7')
 
         print("Saving parameters to {}".format(save_path))
         checkpoint = {
@@ -296,7 +296,7 @@ def eval_epoch(epoch):
     if mAP_fb > best_mAP_fb:
         best_mAP_fb = mAP_fb
 
-        save_path = os.path.join(args.save_dir, args.ckpt_name + '_eval_frame_new.t7')
+        save_path = os.path.join(args.save_dir, args.ckpt_name + '_eval_frame.t7')
 
         print("Saving parameters to {}".format(save_path))
         checkpoint = {
@@ -329,6 +329,7 @@ def eval_epoch(epoch):
 
         if not os.path.isdir(args.save_dir):
             os.mkdir(args.save_dir)
+            
         torch.save(checkpoint, save_path)
 
 

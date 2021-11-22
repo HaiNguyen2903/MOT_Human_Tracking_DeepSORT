@@ -30,41 +30,42 @@ test_vids = [
     'NVR-CH07_S20210609-084936_E20210609-085153'
 ]
 
-# test_folder = '/data.local/hangd/data_vtx/DATA_ROOT/combine_dataset/TRAIN_DATASET/test'
+test_folder = '/data/DATA_ROOT/combine_dataset/TRAIN_DATASET/test'
 
-# new_test = '/data.local/hangd/data_vtx/DATA_ROOT/combine_dataset/TRAIN_DATASET/test_after_split'
-# new_val = '/data.local/hangd/data_vtx/DATA_ROOT/combine_dataset/TRAIN_DATASET/val_after_split'
+new_test = '/data/DATA_ROOT/combine_dataset/TRAIN_DATASET/test_after_split'
+new_val = '/data/DATA_ROOT/combine_dataset/TRAIN_DATASET/val_after_split'
 
-# def mkdir_if_missing(path):
-#     if not os.path.exists(path):
-#         print('Make dir {}'.format(path))
-#         os.makedirs(path)
-
-
-# mkdir_if_missing(new_val)
-# mkdir_if_missing(new_test)
-
-# for vid in val_vids:
-#     try:
-#         print('copy {} to val folder'.format(vid))
-#         shutil.copytree(os.path.join(test_folder, vid), os.path.join(new_val, vid))
-#         shutil.copy(os.path.join(test_folder, vid + '.mp4'), os.path.join(new_val, vid + '.mp4'))
-#     except:
-#         print('error vids: {}'.format(vid))
+def mkdir_if_missing(path):
+    if not os.path.exists(path):
+        print('Make dir {}'.format(path))
+        os.makedirs(path)
 
 
-# for vid in test_vids:
-#     try:
-#         print('copy {} to test folder'.format(vid))
-#         shutil.copytree(os.path.join(test_folder, vid), os.path.join(new_test, vid))
-#         shutil.copy(os.path.join(test_folder, vid + '.mp4'), os.path.join(new_test, vid + '.mp4'))
-#     except:
-#         print('error vids: {}'.format(vid))
-
-root = '/data.local/all/hainp/yolov5_deep_sort/deep_sort_copy/inference_tracking/detect_v3_reid_v8_cbdatav3/mot_preds'
+mkdir_if_missing(new_val)
+mkdir_if_missing(new_test)
 
 for vid in val_vids:
-    shutil.move(os.path.join(root, vid + '.txt'), os.path.join(root, 'val', vid + '.txt'))
+    try:
+        print('copy {} to val folder'.format(vid))
+        shutil.copytree(os.path.join(test_folder, vid), os.path.join(new_val, vid))
+        shutil.copy(os.path.join(test_folder, vid + '.mp4'), os.path.join(new_val, vid + '.mp4'))
+    except:
+        print('error vids: {}'.format(vid))
+
 
 for vid in test_vids:
-    shutil.move(os.path.join(root, vid + '.txt'), os.path.join(root, 'test', vid + '.txt'))
+    try:
+        print('copy {} to test folder'.format(vid))
+        shutil.copytree(os.path.join(test_folder, vid), os.path.join(new_test, vid))
+        shutil.copy(os.path.join(test_folder, vid + '.mp4'), os.path.join(new_test, vid + '.mp4'))
+    except:
+        print('error vids: {}'.format(vid))
+
+# root = '/data.local/all/hainp/yolov5_deep_sort/deep_sort_copy/inference_tracking/detect_v3_reid_v8_cbdatav3/mot_preds'
+
+# for vid in val_vids:
+#     # shutil.move(os.path.join(root, 'test', vid + '.mp4'), os.path.join(root, 'val', vid + '.mp4'))
+#     shutil.move(os.path.join(root, 'test', vid), os.path.join(root, 'val', vid))
+
+# for vid in test_vids:
+#     shutil.move(os.path.join(root, vid + '.txt'), os.path.join(root, 'test', vid + '.txt'))

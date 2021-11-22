@@ -19,7 +19,7 @@ import cv2
 import torch
 import torch.backends.cudnn as cudnn
 from generate_data.gt_utils import get_object_frame
-from IPython import embed
+# from IPython import embed
 
 palette = (2 ** 11 - 1, 2 ** 15 - 1, 2 ** 20 - 1)
 gt_path = '/data.local/all/hainp/yolov5_deep_sort/deep_sort_copy/track_dataset/gt.txt'
@@ -29,8 +29,8 @@ def mkdir_if_missing(path):
         print('Make dir {}'.format(path))
         os.makedirs(path)
 
-def get_model_num_classes(model_path):
-    model = torch.load(model_path)
+def get_model_num_classes(model_path, device):
+    model = torch.load(model_path,map_location=device)
     return model['net_dict']['classifier.4.weight'].size(0)
 
 def xyxy_to_xywh(*xyxy):
@@ -111,6 +111,9 @@ def detect(opt):
     webcam = source == '0' or source.startswith(
         'rtsp') or source.startswith('http') or source.endswith('.txt')
 
+    # Initialize
+    device = select_device(opt.device)
+
     mkdir_if_missing(out)
 
     # initialize deepsort
@@ -122,16 +125,13 @@ def detect(opt):
                         max_dist=cfg.DEEPSORT.MAX_DIST, min_confidence=cfg.DEEPSORT.MIN_CONFIDENCE,
                         nms_max_overlap=cfg.DEEPSORT.NMS_MAX_OVERLAP, max_iou_distance=cfg.DEEPSORT.MAX_IOU_DISTANCE,
                         max_age=cfg.DEEPSORT.MAX_AGE, n_init=cfg.DEEPSORT.N_INIT, nn_budget=cfg.DEEPSORT.NN_BUDGET,
-                        use_cuda=True, reid_classes=get_model_num_classes(opt.deep_sort_weights))
+                        use_cuda=True, reid_classes=get_model_num_classes(opt.deep_sort_weights, device))
 
     # deepsort = DeepSort(cfg.DEEPSORT.REID_CKPT,
     #                     max_dist=cfg.DEEPSORT.MAX_DIST, min_confidence=cfg.DEEPSORT.MIN_CONFIDENCE,
     #                     nms_max_overlap=cfg.DEEPSORT.NMS_MAX_OVERLAP, max_iou_distance=cfg.DEEPSORT.MAX_IOU_DISTANCE,
     #                     max_age=cfg.DEEPSORT.MAX_AGE, n_init=cfg.DEEPSORT.N_INIT, nn_budget=cfg.DEEPSORT.NN_BUDGET,
     #                     use_cuda=True)
-
-    # Initialize
-    device = select_device(opt.device)
 
     # The MOT16 evaluation runs multiple inference streams in parallel, each one writing to
     # its own .txt file. Hence, in that case, the output folder is not restored
@@ -175,7 +175,7 @@ def detect(opt):
     # save_path = str(Path(out))
     save_folder = opt.output
     if not os.path.isdir(save_folder):
-        os.mkdirs(save_folder)
+        os.makedirs(save_folder)
 
     
     # save_path = opt.output
@@ -184,7 +184,7 @@ def detect(opt):
     txt_file_name = source.split('/')[-1].split('.')[0]
     txt_path = str(Path(out)) + '/' + txt_file_name + '.txt'
 
-    group_frame = get_object_frame(gt_path)
+    # group_frame = get_object_frame(gt_path)
     
     for frame_idx, (path, img, im0s, vid_cap) in enumerate(dataset):
         # print(frame_idx)
@@ -277,11 +277,11 @@ def detect(opt):
                                 #                             bbox_left, bbox_w, bbox_h, -1, -1, -1, -1))  # label format
                                 f.write('{},{},{},{},{},{},-1,-1,-1,-1\n'.format(frame_idx, identity, bbox_top,
                                                                                     bbox_left, bbox_w, bbox_h))
-                if(opt.mode == "gt"):
-                    persons_inf = group_frame[frame_idx+1]
-                    bbox_gt_xyxy = list(map(lambda x: x.xywh_to_xyxy(), persons_inf))
-                    identities_gt = list(map(lambda x: x.track_id, persons_inf))
-                    draw_boxes(im0, bbox_gt_xyxy, identities_gt)
+                # if(opt.mode == "gt"):
+                #     persons_inf = group_frame[frame_idx+1]
+                #     bbox_gt_xyxy = list(map(lambda x: x.xywh_to_xyxy(), persons_inf))
+                #     identities_gt = list(map(lambda x: x.track_id, persons_inf))
+                #     draw_boxes(im0, bbox_gt_xyxy, identities_gt)
 
             else:
                 deepsort.increment_ages()
@@ -352,7 +352,7 @@ if __name__ == '__main__':
     parser.add_argument('--conf-thres', type=float, default=0.4, help='object confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.5, help='IOU threshold for NMS')
     parser.add_argument('--fourcc', type=str, default='mp4v', help='output video codec (verify ffmpeg support)')
-    parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    parser.add_argument('--device', default='0', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--show-vid', action='store_true', help='display tracking video results')
     parser.add_argument('--save-vid', action='store_true', help='save video tracking results')
     parser.add_argument('--save-txt', action='store_true', help='save MOT compliant results to *.txt')

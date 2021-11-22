@@ -7,13 +7,18 @@ import argparse
 import os
 
 from torchvision.datasets.folder import default_loader
-from traitlets.traitlets import default
+# from traitlets.traitlets import default
 
 from custom_dataloader import ImageFolderWithPaths
 
 from model import Net
-from IPython import embed
+# from IPython import embed
 import time
+
+def mkdir_if_missing(path):
+    if not os.path.exists(path):
+        print('make dir {}'.format(path))
+        os.makedirs(path)
 
 def calculate_features(net, root_dir, batch, device, save_features = True, save_dir = None, save_name = None):
     net.eval()
@@ -92,6 +97,7 @@ def calculate_features(net, root_dir, batch, device, save_features = True, save_
 
     if save_features:
         # save_name = os.path.basename(args.ckpt)[:-3]
+        mkdir_if_missing(save_dir)
         save_path = os.path.join(save_dir, 'features_' + save_name + '.pth')
         torch.save(features, save_path)
         print('Save features to {}'.format(save_path))
@@ -106,13 +112,13 @@ if __name__ == '__main__':
     # parser.add_argument("--data-dir", default='/data.local/hangd/data_vtx/reid_dataset/uet_reid', type=str)
     # parser.add_argument("--data-dir", default='/data.local/hangd/data_vtx/toy_data/toy_reid_dataset/reid_dataset', type=str)
     parser.add_argument("--no-cuda", action="store_true")
-    parser.add_argument("--gpu-id", default=1, type=int)
+    parser.add_argument("--gpu-id", default=0, type=int)
     parser.add_argument("--ckpt", default="./checkpoint/ckpt.t7", type=str)
     parser.add_argument("--batch", default=64, type=int)
     parser.add_argument("--save-path", default="predicts/debug.pth", type=str)
     parser.add_argument("--save-dir", default="predicts/", type=str)
-    parser.add_argument("--save-name", default="debug.pth", type=str)
-    parser.add_argument("--device", default=1, type=int)
+    parser.add_argument("--save-name", default="debug", type=str)
+    parser.add_argument("--device", default=0, type=int)
 
     args = parser.parse_args()
 
@@ -129,21 +135,22 @@ if __name__ == '__main__':
     # test on gallery folder
     test_dir = os.path.join(root, "gallery")
 
-    trainloader = torch.utils.data.DataLoader(
-        ImageFolderWithPaths(train_dir, transform=None),
-            batch_size=args.batch, shuffle=True
-    )
+    # trainloader = torch.utils.data.DataLoader(
+    #     ImageFolderWithPaths(train_dir, transform=None),
+    #         batch_size=args.batch, shuffle=True
+    # )
+
     testloader = torch.utils.data.DataLoader(
         ImageFolderWithPaths(test_dir, transform=None),
         batch_size=args.batch, shuffle=True
     )
 
-    num_classes = max(len(trainloader.dataset.classes),
-                    len(testloader.dataset.classes))
+    # num_classes = max(len(trainloader.dataset.classes),
+    #                 len(testloader.dataset.classes))
+
+    num_classes = len(testloader.dataset.classes)
 
     checkpoint = torch.load(args.ckpt, map_location=device)
-
-    num_classes = 1359
 
     print("Num class:", num_classes)
 
@@ -151,13 +158,14 @@ if __name__ == '__main__':
     # num_classes=868
 
     # define net 
+    num_classes = 868
     net = Net(reid=True, num_classes=num_classes)
 
 
     assert os.path.isfile(
     args.ckpt), "Error: no checkpoint file found!"
 
-    print('Loading from {}'.format(args.ckpt))
+    # print('Loading from {}'.format(args.ckpt))
 
     net_dict = checkpoint['net_dict']
 
