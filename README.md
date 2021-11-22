@@ -140,6 +140,14 @@ labels_folder_root
 ```
 Where each video labels folder is in YOLO label format.
 
+To do this, do the following steps:
+
+```bash
+cd generate_data
+python generate_data_tree
+```
+Where `data_root` is the folder contains raw VTX data. We use this folder to search for specific videos. `gt_root` is the root folder contains CVAT annotation files. And `tree_root` is the root of the tree data tree we want to create.
+
 We then symlink from these folder to the `MAIN_DATA_TREE` for saving storage and generating time.
 
 ```bash
@@ -151,8 +159,6 @@ In `combine_train_detection_dataset.py`, declare `root_frames_dir` and `root_lab
 ```bash 
 python combine_train_detection_dataset.py
 ```
-
-
 
 ### Generate ReID Data 
 Follow tutorial from this [repo](https://github.com/LeDuySon/ALL_SCRIPTS)
