@@ -5,5 +5,5 @@ for vid_path in "$search_dir"/*.mp4
     do
         # basename "$vid_path"
         name="$(basename -- $vid_path)"
-        python detect.py --source $vid_path --weights $weight --save-txt --save-conf --save-crop --name "detect_for_mtmc"
+        python yolov5/detect.py --source $vid_path --weights $weight --save-txt --save-conf --save-crop --name "detect_for_mtmc"
     done
